@@ -389,7 +389,7 @@ func drinkMovePlayerToSpecialRoom(ctx *Context, world DrinkWorld, player model.P
 		return err
 	}
 
-	arriveMsg := fmt.Sprintf("\n%s%s 들어왔습니다.", name, krtext.Particle(name, '1'))
+	arriveMsg := fmt.Sprintf("\n%s%s 도착하였습니다.", name, krtext.Particle(name, '1'))
 	return roomBroadcast(ctx, roomID, arriveMsg)
 }
 

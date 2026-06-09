@@ -839,7 +839,7 @@ func TestDrinkHandlerSpecialPotionTeleportBroadcast(t *testing.T) {
 	if roomBroadcasts[0].RoomID != "room:special" {
 		t.Errorf("first roomBroadcast roomID = %q, want room:special", roomBroadcasts[0].RoomID)
 	}
-	wantArriveMsg := "\nAlice가 들어왔습니다."
+	wantArriveMsg := "\nAlice가 도착하였습니다."
 	if roomBroadcasts[0].Text != wantArriveMsg {
 		t.Errorf("first roomBroadcast text = %q, want %q", roomBroadcasts[0].Text, wantArriveMsg)
 	}
