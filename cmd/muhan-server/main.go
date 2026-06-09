@@ -18,6 +18,9 @@ import (
 	"sync/atomic"
 	"syscall"
 	"time"
+	"net/http"
+
+	"golang.org/x/net/websocket"
 
 	"muhan/internal/commandspec"
 	enginecmd "muhan/internal/engine/command"
@@ -44,6 +47,7 @@ const legacyLoginGoldCapMessage = "\n\n너무 많은 돈을 가지고 있습니�
 type config struct {
 	root     string
 	listen   string
+	wsListen string
 	actor    string
 	ansi     bool
 	validate bool
@@ -99,6 +103,7 @@ func parseFlags(args []string, stderr io.Writer) (config, error) {
 	root := fs.String("root", ".", "legacy Muhan source/data root")
 	sourceRoot := fs.String("source-root", "", "legacy Muhan source/data root (overrides -root)")
 	listen := fs.String("listen", defaultListenAddr, "TCP listen address")
+	wsListen := fs.String("ws-listen", "127.0.0.1:4041", "WebSocket listen address")
 	actor := fs.String("actor", "", "temporary actor player ID for accepted sessions until login is ported")
 	ansi := fs.Bool("ansi", true, "emit ANSI color sequences for clients")
 	validate := fs.Bool("validate", false, "load and validate runtime inputs, then exit without listening")
@@ -117,6 +122,7 @@ func parseFlags(args []string, stderr io.Writer) (config, error) {
 	return config{
 		root:     *root,
 		listen:   *listen,
+		wsListen: *wsListen,
 		actor:    *actor,
 		ansi:     *ansi,
 		validate: *validate,
@@ -168,6 +174,11 @@ func runServer(cfg config, stdout io.Writer) error {
 	defer listener.Close()
 
 	fmt.Fprintf(stdout, "listening: %s\n", listener.Addr())
+	if cfg.wsListen != "" {
+		tcpPort := listener.Addr().(*net.TCPAddr).Port
+		tcpAddr := fmt.Sprintf("127.0.0.1:%d", tcpPort)
+		startWebSocketProxy(cfg.wsListen, tcpAddr, stdout)
+	}
 	if cfg.actor != "" {
 		fmt.Fprintf(stdout, "temporary actor binding: %s\n", cfg.actor)
 	} else {
@@ -2235,4 +2246,37 @@ func writeSummary(w io.Writer, cfg config, inputs runtimeInputs) {
 		return
 	}
 	fmt.Fprintln(w, "runtime world: initialized")
+}
+
+func startWebSocketProxy(wsListen string, tcpAddr string, stdout io.Writer) {
+	fmt.Fprintf(stdout, "websocket proxy listening: ws://%s -> tcp://%s\n", wsListen, tcpAddr)
+	httpServer := &http.Server{
+		Addr: wsListen,
+		Handler: websocket.Handler(func(ws *websocket.Conn) {
+			defer ws.Close()
+			tcpConn, err := net.Dial("tcp", tcpAddr)
+			if err != nil {
+				log.Printf("WS Proxy dial error: %v", err)
+				return
+			}
+			defer tcpConn.Close()
+
+			errCh := make(chan error, 2)
+			go func() {
+				_, err := io.Copy(ws, tcpConn)
+				errCh <- err
+			}()
+			go func() {
+				_, err := io.Copy(tcpConn, ws)
+				errCh <- err
+			}()
+
+			<-errCh
+		}),
+	}
+	go func() {
+		if err := httpServer.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+			log.Printf("WS Proxy HTTP server error: %v", err)
+		}
+	}()
 }

@@ -1,0 +1,54 @@
+# Build artifacts & caches
+bin/
+*.test
+*.exe
+.gocache/
+go-cache/
+gocache/
+tmp_gocache/
+tmp/
+scratch/
+
+# Source data (런타임에 볼륨으로 마운트)
+player/
+board/
+rooms/
+room/
+post/
+log/
+
+# IDE & tools
+.vscode/
+.idea/
+.antigravitycli/
+.git/
+
+# Archives
+*.zip
+*.tgz
+*.tar.gz
+Muhan.zip
+Muhan_cs.zip
+Muhan_related.zip
+muhan.tgz
+
+# Legacy C source (Go 빌드에 불필요)
+src/
+
+# Node modules (webui-builder에서 새로 설치)
+webui/node_modules/
+webui/dist/
+
+# Reports & docs (런타임 불필요)
+PACKAGE_*.md
+PORTING-GAPS.md
+PORTING_ANALYSIS.md
+WAVE_6PACKAGES_SUMMARY.md
+*.diff
+*.log
+test_output.log
+
+# Docker
+docker/
+compose.yaml
+Dockerfile

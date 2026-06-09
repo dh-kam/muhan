@@ -1,6 +1,83 @@
+# =============================================================================
+#  Muhan MUD - Docker Compose
+#
+#  사용법:
+#    1) 기본 실행 (게임 서버 + 웹 UI):
+#       docker compose up -d muhan webui
+#
+#    2) 전체 실행 (게임 서버 + 웹 UI + PostgreSQL):
+#       docker compose up -d
+#
+#    3) 게임 데이터 연결:
+#       기본적으로 현재 디렉토리를 /data로 마운트합니다.
+#       MUHAN_DATA_DIR 환경변수로 다른 경로를 지정할 수 있습니다:
+#         MUHAN_DATA_DIR=/path/to/gamedata docker compose up -d
+#
+#  데이터 구조 (/data 볼륨 마운트):
+#    /data/
+#    ├── player/        # 플레이어 캐릭터 (레거시 바이너리 + json/)
+#    ├── player/json/   # 플레이어 JSON 사이드카 (런타임 저장)
+#    ├── player/bank/   # 은행 데이터 (json/ 포함)
+#    ├── room/json/     # 룸 오브젝트 사이드카
+#    ├── rooms/         # 방 정의 데이터 (r00~r10)
+#    ├── objmon/        # 오브젝트/몬스터 정의
+#    ├── board/         # 게시판 데이터
+#    ├── help/          # 도움말 파일
+#    ├── post/          # 게시글 데이터
+#    └── log/           # 서버 로그
+# =============================================================================
+
 services:
+  # ──────────────────────────────────────────────────────────
+  # Muhan 게임 서버 (TCP :4000 + WebSocket :4041)
+  # ──────────────────────────────────────────────────────────
+  muhan:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        UID: ${MUHAN_UID:-1000}
+        GID: ${MUHAN_GID:-1000}
+    container_name: muhan-server
+    restart: unless-stopped
+    ports:
+      - "${MUHAN_TCP_PORT:-4000}:4000"      # TCP 게임 서버
+      - "${MUHAN_WS_PORT:-4041}:4041"       # WebSocket 프록시
+    volumes:
+      - ${MUHAN_DATA_DIR:-.}:/data:rw       # 게임 데이터 마운트
+    environment:
+      - TZ=${TZ:-Asia/Seoul}
+    healthcheck:
+      test: ["CMD-SHELL", "nc -z localhost 4000 || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+
+  # ──────────────────────────────────────────────────────────
+  # Web UI (Vite 정적 파일 서빙, Nginx)
+  # ──────────────────────────────────────────────────────────
+  webui:
+    image: nginx:alpine
+    container_name: muhan-webui
+    restart: unless-stopped
+    ports:
+      - "${MUHAN_WEBUI_PORT:-8080}:80"
+    volumes:
+      - ./webui/dist:/usr/share/nginx/html:ro
+      - ./docker/nginx.conf:/etc/nginx/conf.d/default.conf:ro
+    depends_on:
+      muhan:
+        condition: service_healthy
+
+  # ──────────────────────────────────────────────────────────
+  # PostgreSQL (DB Import/마이그레이션용, 선택적)
+  # ──────────────────────────────────────────────────────────
   postgres:
     image: postgres:16-alpine
+    container_name: muhan-postgres
+    profiles:
+      - db
     environment:
       POSTGRES_DB: ${MUHAN_POSTGRES_DB:-muhan}
       POSTGRES_USER: ${MUHAN_POSTGRES_USER:-muhan}
