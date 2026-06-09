@@ -6,7 +6,6 @@ import (
 
 	"muhan/internal/commandparse"
 	"muhan/internal/commandspec"
-	"muhan/internal/persist/legacykr"
 	"muhan/internal/world/model"
 )
 
@@ -93,12 +92,7 @@ func TestDMHelpHandlerTopics(t *testing.T) {
 	writeLegacyHelpFixture(t, root, "dm_helpfile", "기본 DM 도움말\n")
 	writeLegacyHelpFixture(t, root, "mflags", "몬스터 플래그 도움말\n")
 
-	// Encode "관리" to EUC-KR for the filesystem filename to match production
-	importLegacykr, err := legacykr.EncodeEUCKR("관리")
-	if err != nil {
-		t.Fatal(err)
-	}
-	writeLegacyHelpFixture(t, root, string(importLegacykr), "관리 도움말\n")
+	writeLegacyHelpFixture(t, root, "관리", "관리 도움말\n")
 
 	handler := NewDMHelpHandler(root, world)
 

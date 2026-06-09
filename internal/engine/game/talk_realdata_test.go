@@ -594,6 +594,9 @@ func pathExists(path string) bool {
 }
 
 func realTalkDisplayPath(name string) string {
+	if utf8.ValidString(name) {
+		return filepath.Join("objmon", "talk", name)
+	}
 	decoded, err := legacykr.DecodeEUCKR([]byte(name))
 	if err != nil {
 		return filepath.Join("objmon", "talk", name)

@@ -106,12 +106,7 @@ func dmHelpTopicArg(resolved ResolvedCommand) (string, bool) {
 }
 
 func readDMHelpFile(root, name string, ctx *Context) (string, error) {
-	// Encode name to EUC-KR bytes in case of non-ASCII characters like "관리"
-	encodedNameBytes, err := legacykr.EncodeEUCKR(name)
-	if err != nil {
-		return "", err
-	}
-	path := filepath.Join(root, "help", filepath.Clean(string(encodedNameBytes)))
+	path := filepath.Join(root, "help", filepath.Clean(name))
 	data, err := os.ReadFile(path)
 	if err != nil {
 		return "", err

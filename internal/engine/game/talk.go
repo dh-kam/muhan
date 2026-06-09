@@ -203,11 +203,7 @@ func legacyTalkFilename(name string, level int) (string, bool) {
 	if name == "" || level <= 0 {
 		return "", false
 	}
-	encoded, err := legacykr.EncodeEUCKR(name)
-	if err != nil {
-		return "", false
-	}
-	return string(encoded) + "-" + strconv.Itoa(level), true
+	return name + "-" + strconv.Itoa(level), true
 }
 
 func legacyTalkFilenameCandidates(room model.Room, creature model.Creature) []string {

@@ -941,11 +941,7 @@ func legacyDeathDescriptionFilename(name string, level int) (string, bool) {
 	if name == "" || level <= 0 {
 		return "", false
 	}
-	encoded, err := legacykr.EncodeEUCKR(name)
-	if err != nil {
-		return "", false
-	}
-	return string(encoded) + "_" + strconv.Itoa(level), true
+	return name + "_" + strconv.Itoa(level), true
 }
 
 func creatureLegacyLevel(creature model.Creature) int {
