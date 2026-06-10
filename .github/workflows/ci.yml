@@ -76,6 +76,8 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           echo '```' > body.txt
+          echo '=== FIRST 200 LINES ===' >> body.txt
+          head -n 200 test.log >> body.txt
           echo '=== FAIL AND PANIC LINES ===' >> body.txt
           grep -E "FAIL|panic" test.log >> body.txt
           echo '=== LAST 100 LINES ===' >> body.txt
