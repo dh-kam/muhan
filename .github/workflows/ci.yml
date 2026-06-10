@@ -66,12 +66,16 @@ jobs:
         run: |
           go test ./... -timeout 300s -v > test.log 2>&1 || (cat test.log && exit 1)
 
-      - name: Upload test log
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: test-log
-          path: test.log
+      - name: Push test log to branch
+        if: failure()
+        run: |
+          git config --global user.name "GitHub Action"
+          git config --global user.email "action@github.com"
+          git fetch origin
+          git checkout -B debug-log
+          git add test.log
+          git commit -m "Upload test log from CI failure"
+          git push -f origin debug-log
 
   # ──────────────────────────────────────────────────────────
   # 빌드 검증
