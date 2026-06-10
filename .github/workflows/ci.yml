@@ -76,6 +76,9 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           echo '```' > body.txt
+          echo '=== FAIL AND PANIC LINES ===' >> body.txt
+          grep -E "FAIL|panic" test.log >> body.txt
+          echo '=== LAST 100 LINES ===' >> body.txt
           tail -n 100 test.log >> body.txt
           echo '```' >> body.txt
           gh issue create --title "CI Test Failure Log" --body-file body.txt || true
