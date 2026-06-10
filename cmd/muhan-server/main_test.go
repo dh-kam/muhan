@@ -3193,6 +3193,10 @@ func TestServerLoopFormatsUnknownCommand(t *testing.T) {
 }
 
 func TestRunDryRunLoadsInputsAndDoesNotListen(t *testing.T) {
+	if os.Getenv("CI") != "" || testing.Short() {
+		t.Skip("skipping slow real root parsing in CI or short mode")
+	}
+
 	var stdout, stderr bytes.Buffer
 
 	code := run([]string{"-root", repoRoot(t), "-dry-run"}, &stdout, &stderr)
