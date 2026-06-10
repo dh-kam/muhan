@@ -154,6 +154,7 @@ func TestRestoreFamilyBankSidecarsMergesOnlyFamilyBanks(t *testing.T) {
 
 func TestCommandHandlersRegistersAvailableHandlers(t *testing.T) {
 	inputs := serverTestRuntimeInputs(t)
+	defer inputs.world.Close()
 	handlers := commandHandlers(inputs)
 
 	expectedKeys := []string{
@@ -194,6 +195,7 @@ func TestCommandHandlersRegistersAvailableHandlers(t *testing.T) {
 
 func TestServerLoginBindsActorAfterLegacyPassword(t *testing.T) {
 	inputs := serverTestRuntimeInputs(t)
+	defer inputs.world.Close()
 	login := newServerLoginManager(inputs.world)
 	loop := game.NewLoop(serverDispatcher(inputs),
 		game.WithPrompt(func(session.ID, *enginecmd.Context, enginecmd.Status) string {
@@ -229,6 +231,7 @@ func TestServerLoginBindsActorAfterLegacyPassword(t *testing.T) {
 
 func TestServerLoginCreatesNewPlayerLikeLegacyCreatePly(t *testing.T) {
 	inputs := serverTestRuntimeInputs(t)
+	defer inputs.world.Close()
 	inputs.world.SetDBRoot(inputs.summary.Root)
 	logDir := filepath.Join(inputs.summary.Root, "log")
 	if err := os.MkdirAll(logDir, 0o700); err != nil {
@@ -356,6 +359,7 @@ func TestServerLoginCreatesNewPlayerLikeLegacyCreatePly(t *testing.T) {
 
 func TestServerLoginCreatePasswordUsesLegacyByteLength(t *testing.T) {
 	inputs := serverTestRuntimeInputs(t)
+	defer inputs.world.Close()
 	inputs.world.SetDBRoot(inputs.summary.Root)
 	login := newServerLoginManager(inputs.world, inputs.summary.Root)
 	create := serverLoginState{
@@ -403,6 +407,7 @@ func TestServerLoginCreatePasswordUsesLegacyByteLength(t *testing.T) {
 
 func TestServerLoginReportsWaitingPostLikeLegacy(t *testing.T) {
 	inputs := serverTestRuntimeInputs(t)
+	defer inputs.world.Close()
 	logDir := filepath.Join(inputs.summary.Root, "log")
 	if err := os.MkdirAll(logDir, 0o700); err != nil {
 		t.Fatalf("mkdir log dir: %v", err)
@@ -448,6 +453,7 @@ func TestServerLoginReportsWaitingPostLikeLegacy(t *testing.T) {
 
 func TestServerLoginRendersNewsAndWaitsLikeLegacy(t *testing.T) {
 	inputs := serverTestRuntimeInputs(t)
+	defer inputs.world.Close()
 	logDir := filepath.Join(inputs.summary.Root, "log")
 	if err := os.MkdirAll(logDir, 0o700); err != nil {
 		t.Fatalf("mkdir log dir: %v", err)
@@ -487,6 +493,7 @@ func TestServerLoginRendersNewsAndWaitsLikeLegacy(t *testing.T) {
 
 func TestServerLoginRendersDialinForLegacyAddressBeforeNews(t *testing.T) {
 	inputs := serverTestRuntimeInputs(t)
+	defer inputs.world.Close()
 	helpDir := filepath.Join(inputs.summary.Root, "help")
 	if err := os.MkdirAll(helpDir, 0o700); err != nil {
 		t.Fatalf("mkdir help dir: %v", err)
@@ -530,6 +537,7 @@ func TestServerLoginRendersDialinForLegacyAddressBeforeNews(t *testing.T) {
 
 func TestServerLoginPaginatesLongNewsLikeLegacyViewFile(t *testing.T) {
 	inputs := serverTestRuntimeInputs(t)
+	defer inputs.world.Close()
 	logDir := filepath.Join(inputs.summary.Root, "log")
 	if err := os.MkdirAll(logDir, 0o700); err != nil {
 		t.Fatalf("mkdir log dir: %v", err)
@@ -580,6 +588,7 @@ func TestServerLoginPaginatesLongNewsLikeLegacyViewFile(t *testing.T) {
 
 func TestServerLoginShowsFamilyNewsAndFalThenDeletesFalLikeLegacy(t *testing.T) {
 	inputs := serverTestRuntimeInputs(t)
+	defer inputs.world.Close()
 	logDir := filepath.Join(inputs.summary.Root, "log")
 	if err := os.MkdirAll(logDir, 0o700); err != nil {
 		t.Fatalf("mkdir log dir: %v", err)
@@ -634,6 +643,7 @@ func TestServerLoginShowsFamilyNewsAndFalThenDeletesFalLikeLegacy(t *testing.T) 
 
 func TestServerLoginUsesDMNewsForDMClassLikeLegacy(t *testing.T) {
 	inputs := serverTestRuntimeInputs(t)
+	defer inputs.world.Close()
 	if err := inputs.world.SetCreatureStat("creature:dm", "class", legacyLoginDMClass); err != nil {
 		t.Fatalf("set DM class: %v", err)
 	}
@@ -678,6 +688,7 @@ func TestServerLoginUsesDMNewsForDMClassLikeLegacy(t *testing.T) {
 
 func TestServerLoginCapsExcessGoldLikeLegacyLoadPly(t *testing.T) {
 	inputs := serverTestRuntimeInputs(t)
+	defer inputs.world.Close()
 	if err := inputs.world.SetCreatureStat("creature:alice", "gold", legacyLoginGoldCap+1); err != nil {
 		t.Fatalf("set Alice gold: %v", err)
 	}
@@ -724,6 +735,7 @@ func TestServerLoginCapsExcessGoldLikeLegacyLoadPly(t *testing.T) {
 
 func TestServerLoginDisconnectsAfterThreeBadPasswords(t *testing.T) {
 	inputs := serverTestRuntimeInputs(t)
+	defer inputs.world.Close()
 	login := newServerLoginManager(inputs.world)
 	loop := game.NewLoop(serverDispatcher(inputs), game.WithUnauthenticatedLineHandler(login.HandleLine))
 	commands := make(chan session.Command, 4)
@@ -748,6 +760,7 @@ func TestServerLoginDisconnectsAfterThreeBadPasswords(t *testing.T) {
 
 func TestServerLoginSitePasswordGate(t *testing.T) {
 	inputs := serverTestRuntimeInputs(t)
+	defer inputs.world.Close()
 	login := newServerLoginManager(inputs.world)
 	loop := game.NewLoop(serverDispatcher(inputs), game.WithUnauthenticatedLineHandler(login.HandleLine))
 
@@ -771,6 +784,7 @@ func TestServerLoginSitePasswordGate(t *testing.T) {
 
 func TestServerLoginSitePasswordPreservesDialinHost(t *testing.T) {
 	inputs := serverTestRuntimeInputs(t)
+	defer inputs.world.Close()
 	helpDir := filepath.Join(inputs.summary.Root, "help")
 	if err := os.MkdirAll(helpDir, 0o700); err != nil {
 		t.Fatalf("mkdir help dir: %v", err)
@@ -825,6 +839,7 @@ func TestRealRootHelpCommandDispatches(t *testing.T) {
 
 func TestServerDispatcherRunsCurrentRegisteredCommandSequence(t *testing.T) {
 	inputs := serverTestRuntimeInputs(t)
+	defer inputs.world.Close()
 	loop := newServerTestLoop(inputs)
 	aliceCommands := make(chan session.Command, 16)
 	bobCommands := make(chan session.Command, 16)
@@ -1032,6 +1047,7 @@ func TestServerDispatcherRunsCurrentRegisteredCommandSequence(t *testing.T) {
 
 func TestServerLoopMemoCommandWritesLegacyTargetFile(t *testing.T) {
 	inputs := serverTestRuntimeInputs(t)
+	defer inputs.world.Close()
 	loop := newServerTestLoop(inputs)
 	commands := make(chan session.Command, 4)
 	registerServerTestSession(t, loop, "s1", commands, "player:alice")
@@ -1054,6 +1070,7 @@ func TestServerLoopMemoCommandWritesLegacyTargetFile(t *testing.T) {
 
 func TestServerLoopAliasNameUsesLegacyByteLimit(t *testing.T) {
 	inputs := serverTestRuntimeInputs(t)
+	defer inputs.world.Close()
 	loop := newServerTestLoop(inputs)
 	commands := make(chan session.Command, 4)
 	registerServerTestSession(t, loop, "s1", commands, "player:alice")
@@ -1068,6 +1085,7 @@ func TestServerLoopAliasNameUsesLegacyByteLimit(t *testing.T) {
 
 func TestServerLoopInfoCommandUsesPendingSecondPage(t *testing.T) {
 	inputs := serverTestRuntimeInputs(t)
+	defer inputs.world.Close()
 	loop := newServerTestLoop(inputs)
 	commands := make(chan session.Command, 8)
 	registerServerTestSession(t, loop, "s1", commands, "player:alice")
@@ -1105,6 +1123,7 @@ func TestServerLoopInfoCommandUsesPendingSecondPage(t *testing.T) {
 
 func TestForceWorldWrapperDispatchesToTargetSession(t *testing.T) {
 	inputs := serverTestRuntimeInputs(t)
+	defer inputs.world.Close()
 	var loop *game.Loop
 	inputs.getLoop = func() *game.Loop {
 		return loop
@@ -1125,6 +1144,7 @@ func TestForceWorldWrapperDispatchesToTargetSession(t *testing.T) {
 
 func TestForceWorldWrapperRejectsPendingTargetLikeLegacy(t *testing.T) {
 	inputs := serverTestRuntimeInputs(t)
+	defer inputs.world.Close()
 	var loop *game.Loop
 	inputs.getLoop = func() *game.Loop {
 		return loop
@@ -1150,6 +1170,7 @@ func TestForceWorldWrapperRejectsPendingTargetLikeLegacy(t *testing.T) {
 
 func TestServerLoopGiveCommands(t *testing.T) {
 	inputs := serverTestRuntimeInputs(t)
+	defer inputs.world.Close()
 	loop := newServerTestLoop(inputs)
 	aliceCommands := make(chan session.Command, 4)
 	bobCommands := make(chan session.Command, 4)
@@ -1180,6 +1201,7 @@ func TestServerLoopGiveCommands(t *testing.T) {
 
 func TestServerLoopTalkCommand(t *testing.T) {
 	inputs := serverTestRuntimeInputs(t)
+	defer inputs.world.Close()
 	loop := newServerTestLoop(inputs)
 	aliceCommands := make(chan session.Command, 4)
 	bobCommands := make(chan session.Command, 4)
@@ -1199,6 +1221,7 @@ func TestServerLoopTalkCommand(t *testing.T) {
 
 func TestServerLoopBoardListAndReadCommands(t *testing.T) {
 	inputs := serverTestRuntimeInputs(t)
+	defer inputs.world.Close()
 	loop := newServerTestLoop(inputs)
 	commands := make(chan session.Command, 4)
 	registerServerTestSession(t, loop, "s1", commands, "player:mallory")
@@ -1239,6 +1262,7 @@ func TestServerLoopBoardListAndReadCommands(t *testing.T) {
 
 func TestServerLoopBoardReadDisconnectStopsPendingPager(t *testing.T) {
 	inputs := serverTestRuntimeInputs(t)
+	defer inputs.world.Close()
 	bodyPath := filepath.Join(inputs.summary.Root, "board", "info", "board.1")
 	var builder strings.Builder
 	for i := 1; i <= 24; i++ {
@@ -1289,6 +1313,7 @@ func TestServerLoopBoardReadDisconnectStopsPendingPager(t *testing.T) {
 
 func TestServerLoopBoardWriteAndDeleteCommands(t *testing.T) {
 	inputs := serverTestRuntimeInputs(t)
+	defer inputs.world.Close()
 	inputs.world.SetDBRoot(inputs.summary.Root)
 	loop := newServerTestLoop(inputs)
 	commands := make(chan session.Command, 8)
@@ -1337,6 +1362,7 @@ func TestServerLoopBoardWriteAndDeleteCommands(t *testing.T) {
 
 func TestServerLoopBoardWriteDisconnectBeforeFinalDotDoesNotPersist(t *testing.T) {
 	inputs := serverTestRuntimeInputs(t)
+	defer inputs.world.Close()
 	root := inputs.summary.Root
 	boardDir := filepath.Join(root, "board", "info")
 	indexPath := filepath.Join(boardDir, "board_index")
@@ -1384,6 +1410,7 @@ func TestServerLoopBoardWriteDisconnectBeforeFinalDotDoesNotPersist(t *testing.T
 
 func TestServerLoopNotepadDisconnectStopsPendingAppender(t *testing.T) {
 	inputs := serverTestRuntimeInputs(t)
+	defer inputs.world.Close()
 	root := inputs.summary.Root
 	padPath := filepath.Join(root, "post", "DM_pad")
 
@@ -1424,6 +1451,7 @@ func TestServerLoopNotepadDisconnectStopsPendingAppender(t *testing.T) {
 
 func TestServerLoopNotepadReadDisconnectStopsPendingPager(t *testing.T) {
 	inputs := serverTestRuntimeInputs(t)
+	defer inputs.world.Close()
 	root := inputs.summary.Root
 	postDir := filepath.Join(root, "post")
 	if err := os.MkdirAll(postDir, 0o755); err != nil {
@@ -1478,6 +1506,7 @@ func TestServerLoopNotepadReadDisconnectStopsPendingPager(t *testing.T) {
 
 func TestServerLoopFamilyNewsDisconnectStopsPendingAppender(t *testing.T) {
 	inputs := serverTestRuntimeInputs(t)
+	defer inputs.world.Close()
 	inputs.world.SetDBRoot(inputs.summary.Root)
 	newsPath := filepath.Join(inputs.summary.Root, "player", "family", "family_news_7")
 
@@ -1533,6 +1562,7 @@ func TestServerLoopFamilyNewsDisconnectStopsPendingAppender(t *testing.T) {
 
 func TestServerLoopFamilyNewsReadDisconnectStopsPendingPager(t *testing.T) {
 	inputs := serverTestRuntimeInputs(t)
+	defer inputs.world.Close()
 	newsDir := filepath.Join(inputs.summary.Root, "player", "family")
 	if err := os.MkdirAll(newsDir, 0o755); err != nil {
 		t.Fatal(err)
@@ -2167,6 +2197,7 @@ func TestServerLoopPostsendDisconnectStopsPendingAppender(t *testing.T) {
 
 func TestServerLoopPostReadDisconnectStopsPendingPager(t *testing.T) {
 	inputs := serverTestRuntimeInputs(t)
+	defer inputs.world.Close()
 	root := inputs.summary.Root
 	if err := inputs.world.UpdateRoomFlag("room:combat", 11, true); err != nil {
 		t.Fatalf("set post office room flag: %v", err)
@@ -2284,6 +2315,7 @@ func TestServerLoopDMLogDisconnectStopsPendingPager(t *testing.T) {
 
 func TestServerLoopHelpDisconnectStopsPendingPager(t *testing.T) {
 	inputs := serverTestRuntimeInputs(t)
+	defer inputs.world.Close()
 	var builder strings.Builder
 	for i := 1; i <= 24; i++ {
 		builder.WriteString("line ")
@@ -2400,6 +2432,7 @@ func TestServerLoopReadScrollDisconnectStopsSpecialMapPager(t *testing.T) {
 
 func TestServerLoopContainerGetDropCommands(t *testing.T) {
 	inputs := serverTestRuntimeInputs(t)
+	defer inputs.world.Close()
 	if err := inputs.world.MoveObject("object:bag", model.ObjectLocation{CreatureID: "creature:alice", Slot: "inventory"}); err != nil {
 		t.Fatalf("move fixture bag into inventory: %v", err)
 	}
@@ -2427,6 +2460,7 @@ func TestServerLoopContainerGetDropCommands(t *testing.T) {
 
 func TestServerLoopEquipmentCommands(t *testing.T) {
 	inputs := serverTestRuntimeInputs(t)
+	defer inputs.world.Close()
 	loop := newServerTestLoop(inputs)
 	commands := make(chan session.Command, 4)
 	registerServerTestSession(t, loop, "s1", commands, "player:alice")
@@ -2449,6 +2483,7 @@ func TestServerLoopEquipmentCommands(t *testing.T) {
 
 func TestServerLoopAppraiseAndCompareCommands(t *testing.T) {
 	inputs := serverTestRuntimeInputs(t)
+	defer inputs.world.Close()
 	loop := newServerTestLoop(inputs)
 	commands := make(chan session.Command, 8)
 	registerServerTestSession(t, loop, "s1", commands, "player:alice")
@@ -2468,6 +2503,7 @@ func TestServerLoopAppraiseAndCompareCommands(t *testing.T) {
 
 func TestServerLoopShopListCommand(t *testing.T) {
 	inputs := serverTestRuntimeInputs(t)
+	defer inputs.world.Close()
 	if err := inputs.world.MovePlayerToRoom("player:alice", "room:01071"); err != nil {
 		t.Fatalf("move alice to shop: %v", err)
 	}
@@ -2483,6 +2519,7 @@ func TestServerLoopShopListCommand(t *testing.T) {
 
 func TestServerLoopShopBuyCommand(t *testing.T) {
 	inputs := serverTestRuntimeInputs(t)
+	defer inputs.world.Close()
 	if err := inputs.world.MovePlayerToRoom("player:alice", "room:01071"); err != nil {
 		t.Fatalf("move alice to shop: %v", err)
 	}
@@ -2506,6 +2543,7 @@ func TestServerLoopShopBuyCommand(t *testing.T) {
 
 func TestServerLoopShopValueCommand(t *testing.T) {
 	inputs := serverTestRuntimeInputs(t)
+	defer inputs.world.Close()
 	if err := inputs.world.MovePlayerToRoom("player:alice", "room:pawn"); err != nil {
 		t.Fatalf("move alice to pawn shop: %v", err)
 	}
@@ -2521,6 +2559,7 @@ func TestServerLoopShopValueCommand(t *testing.T) {
 
 func TestServerLoopShopSellCommand(t *testing.T) {
 	inputs := serverTestRuntimeInputs(t)
+	defer inputs.world.Close()
 	if err := inputs.world.MovePlayerToRoom("player:alice", "room:pawn"); err != nil {
 		t.Fatalf("move alice to pawn shop: %v", err)
 	}
@@ -2548,6 +2587,7 @@ func TestServerLoopShopSellCommand(t *testing.T) {
 
 func TestServerLoopAttackMonsterCommand(t *testing.T) {
 	inputs := serverTestRuntimeInputs(t)
+	defer inputs.world.Close()
 	loop := newServerTestLoop(inputs)
 	commands := make(chan session.Command, 2)
 	registerServerTestSession(t, loop, "s1", commands, "player:kate")
@@ -2567,6 +2607,7 @@ func TestServerLoopAttackMonsterCommand(t *testing.T) {
 
 func TestServerLoopExitControlCommands(t *testing.T) {
 	inputs := serverTestRuntimeInputs(t)
+	defer inputs.world.Close()
 	loop := newServerTestLoop(inputs)
 	commands := make(chan session.Command, 8)
 	registerServerTestSession(t, loop, "s1", commands, "player:dave")
@@ -2629,6 +2670,7 @@ func TestServerLoopExitControlCommands(t *testing.T) {
 
 func TestServerLoopReturnSquareCommand(t *testing.T) {
 	inputs := serverTestRuntimeInputs(t)
+	defer inputs.world.Close()
 	loop := newServerTestLoop(inputs)
 	commands := make(chan session.Command, 2)
 	registerServerTestSession(t, loop, "s1", commands, "player:alice")
@@ -2696,6 +2738,7 @@ func TestServerLoopMovesThroughRuntimeExitNameCommand(t *testing.T) {
 
 func TestServerLoopTargetLookObjectCommands(t *testing.T) {
 	inputs := serverTestRuntimeInputs(t)
+	defer inputs.world.Close()
 	if err := inputs.world.MoveObject("object:bag", model.ObjectLocation{CreatureID: "creature:alice", Slot: "inventory"}); err != nil {
 		t.Fatalf("move fixture bag into inventory: %v", err)
 	}
@@ -2724,6 +2767,7 @@ func TestServerLoopTargetLookObjectCommands(t *testing.T) {
 
 func TestServerLoopTargetLookContainerContents(t *testing.T) {
 	inputs := serverTestRuntimeInputs(t)
+	defer inputs.world.Close()
 	if err := inputs.world.MoveObject("object:bag", model.ObjectLocation{CreatureID: "creature:alice", Slot: "inventory"}); err != nil {
 		t.Fatalf("move fixture bag into inventory: %v", err)
 	}
@@ -2740,6 +2784,7 @@ func TestServerLoopTargetLookContainerContents(t *testing.T) {
 
 func TestServerLoopTargetLookCreatureCommand(t *testing.T) {
 	inputs := serverTestRuntimeInputs(t)
+	defer inputs.world.Close()
 	loop := newServerTestLoop(inputs)
 	commands := make(chan session.Command, 2)
 	registerServerTestSession(t, loop, "s1", commands, "player:alice")
@@ -2752,6 +2797,7 @@ func TestServerLoopTargetLookCreatureCommand(t *testing.T) {
 
 func TestServerLoopTargetLookExitCommand(t *testing.T) {
 	inputs := serverTestRuntimeInputs(t)
+	defer inputs.world.Close()
 	loop := newServerTestLoop(inputs)
 	commands := make(chan session.Command, 2)
 	registerServerTestSession(t, loop, "s1", commands, "player:alice")
@@ -2774,6 +2820,7 @@ func TestServerLoopTargetLookExitCommand(t *testing.T) {
 
 func TestServerLoopTargetLookAliases(t *testing.T) {
 	inputs := serverTestRuntimeInputs(t)
+	defer inputs.world.Close()
 	loop := newServerTestLoop(inputs)
 	commands := make(chan session.Command, 4)
 	registerServerTestSession(t, loop, "s1", commands, "player:alice")
@@ -2791,6 +2838,7 @@ func TestServerLoopTargetLookAliases(t *testing.T) {
 
 func TestServerLoopMoveMissingDestinationExitDoesNotMoveActor(t *testing.T) {
 	inputs := serverTestRuntimeInputs(t)
+	defer inputs.world.Close()
 	loop := newServerTestLoop(inputs)
 	commands := make(chan session.Command, 4)
 	registerServerTestSession(t, loop, "s3", commands, "player:carol")
@@ -2814,6 +2862,7 @@ func TestServerLoopMoveMissingDestinationExitDoesNotMoveActor(t *testing.T) {
 
 func TestServerLoopMoveBlockedExitFlagsDoNotMoveActor(t *testing.T) {
 	inputs := serverTestRuntimeInputs(t)
+	defer inputs.world.Close()
 	loop := newServerTestLoop(inputs)
 	commands := make(chan session.Command, 4)
 	registerServerTestSession(t, loop, "s4", commands, "player:dave")
@@ -2836,6 +2885,7 @@ func TestServerLoopMoveBlockedExitFlagsDoNotMoveActor(t *testing.T) {
 
 func TestServerLoopRoomLookHidesNonVisibleExitFlags(t *testing.T) {
 	inputs := serverTestRuntimeInputs(t)
+	defer inputs.world.Close()
 	loop := newServerTestLoop(inputs)
 	commands := make(chan session.Command, 2)
 	registerServerTestSession(t, loop, "s5", commands, "player:eve")
@@ -2856,6 +2906,7 @@ func TestServerLoopRoomLookHidesNonVisibleExitFlags(t *testing.T) {
 
 func TestServerLoopTargetLookExitFlagsAndDestinationRestrictions(t *testing.T) {
 	inputs := serverTestRuntimeInputs(t)
+	defer inputs.world.Close()
 	loop := newServerTestLoop(inputs)
 	commands := make(chan session.Command, 4)
 	registerServerTestSession(t, loop, "s5", commands, "player:eve")
@@ -2913,6 +2964,7 @@ func TestServerLoopMoveVisibilityExitFlags(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			inputs := serverTestRuntimeInputs(t)
+	defer inputs.world.Close()
 			loop := newServerTestLoop(inputs)
 			commands := make(chan session.Command, 2)
 			registerServerTestSession(t, loop, "s5", commands, "player:eve")
@@ -2985,6 +3037,7 @@ func TestServerLoopMoveNakedExitInventoryRestrictions(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			inputs := serverTestRuntimeInputs(t)
+	defer inputs.world.Close()
 			loop := newServerTestLoop(inputs)
 			commands := make(chan session.Command, 2)
 			registerServerTestSession(t, loop, "s6", commands, tt.actor)
@@ -3048,6 +3101,7 @@ func TestServerLoopMoveFamilyDestinationRestrictions(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			inputs := serverTestRuntimeInputs(t)
+	defer inputs.world.Close()
 			loop := newServerTestLoop(inputs)
 			commands := make(chan session.Command, 2)
 			registerServerTestSession(t, loop, "s7", commands, "player:heidi")
@@ -3101,6 +3155,7 @@ func TestServerLoopMoveOnlyMarriedInviteAllowsMarriageMismatch(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			inputs := serverTestRuntimeInputs(t)
+	defer inputs.world.Close()
 			loop := newServerTestLoop(inputs)
 			commands := make(chan session.Command, 2)
 			registerServerTestSession(t, loop, "s8", commands, tt.actor)

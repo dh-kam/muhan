@@ -179,6 +179,7 @@ func TestServerLoopSuicideFinalizesAndCleansFiles(t *testing.T) {
 
 func TestServerLoopLowLevelQuitCleansFilesAndRuntimePlayerLikeLegacy(t *testing.T) {
 	inputs := serverTestRuntimeInputs(t)
+	defer inputs.world.Close()
 	if err := inputs.world.SetCreatureStat("creature:alice", "class", 4); err != nil {
 		t.Fatalf("set alice class: %v", err)
 	}

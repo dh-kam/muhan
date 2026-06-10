@@ -13,6 +13,7 @@ import (
 
 func TestServerSuicideSinkBroadcastsAndLogsViaHooks(t *testing.T) {
 	inputs := serverTestRuntimeInputs(t)
+	defer inputs.world.Close()
 	if err := inputs.world.SetCreatureStat("creature:alice", "level", 6); err != nil {
 		t.Fatalf("raise alice level: %v", err)
 	}
