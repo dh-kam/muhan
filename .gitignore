@@ -16,7 +16,7 @@ scratch/
 bin/
 *.test
 *.exe
-muhan-server
+/muhan-server
 
 # Compressed Archives
 *.zip

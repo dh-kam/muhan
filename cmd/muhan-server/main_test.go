@@ -363,7 +363,7 @@ func TestServerLoginCreatePasswordUsesLegacyByteLength(t *testing.T) {
 		create: serverLoginCreateState{
 			name:         "암호영웅",
 			male:         true,
-			class:        legacyCreateClassFighter,
+			class:        model.ClassFighter,
 			strength:     12,
 			dexterity:    10,
 			constitution: 12,

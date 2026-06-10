@@ -17,7 +17,6 @@ import (
 	"sync"
 	"sync/atomic"
 	"syscall"
-	"time"
 
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 
@@ -558,116 +557,6 @@ func serve(ctx context.Context, listener net.Listener, inputs runtimeInputs, act
 			}
 		}()
 	}
-}
-
-type serverLoginStep int
-
-const (
-	serverLoginSitePassword serverLoginStep = iota
-	serverLoginName
-	serverLoginPassword
-	serverLoginCreateConfirm
-	serverLoginCreateEnter
-	serverLoginCreateGender
-	serverLoginCreateClass
-	serverLoginCreateStats
-	serverLoginCreateWeapon
-	serverLoginCreateAlignment
-	serverLoginCreateRace
-	serverLoginCreatePassword
-)
-
-type serverLoginState struct {
-	step         serverLoginStep
-	playerID     model.PlayerID
-	failures     int
-	sitePassword string
-	remoteHost   string
-	create       serverLoginCreateState
-}
-
-type serverLoginCreateState struct {
-	name         string
-	male         bool
-	class        int
-	strength     int
-	dexterity    int
-	constitution int
-	intelligence int
-	piety        int
-	weapon       int
-	chaos        bool
-	race         int
-}
-
-type loginIPRecord struct {
-	failures     int
-	lastFailure  time.Time
-	blockedUntil time.Time
-}
-
-type serverLoginPostLoadStepKind int
-
-const (
-	serverLoginPostLoadStepMessage serverLoginPostLoadStepKind = iota
-	serverLoginPostLoadStepFile
-	serverLoginPostLoadStepWait
-)
-
-type serverLoginPostLoadStep struct {
-	kind    serverLoginPostLoadStepKind
-	content string
-	prompt  string
-	onDone  func() error
-}
-
-type legacyCreateClassStats struct {
-	hpStart int
-	mpStart int
-	hp      int
-	mp      int
-	nDice   int
-	sDice   int
-	pDice   int
-}
-
-const (
-	legacyCreateClassAssassin  = 1
-	legacyCreateClassBarbarian = 2
-	legacyCreateClassCleric    = 3
-	legacyCreateClassFighter   = 4
-	legacyCreateClassMage      = 5
-	legacyCreateClassPaladin   = 6
-	legacyCreateClassRanger    = 7
-	legacyCreateClassThief     = 8
-
-	legacyCreateRaceDwarf     = 1
-	legacyCreateRaceElf       = 2
-	legacyCreateRaceHalfElf   = 3
-	legacyCreateRaceHobbit    = 4
-	legacyCreateRaceHuman     = 5
-	legacyCreateRaceOrc       = 6
-	legacyCreateRaceHalfGiant = 7
-	legacyCreateRaceGnome     = 8
-)
-
-var legacyCreateClassStatTable = map[int]legacyCreateClassStats{
-	legacyCreateClassAssassin:  {hpStart: 55, mpStart: 40, hp: 5, mp: 2, nDice: 1, sDice: 6, pDice: 0},
-	legacyCreateClassBarbarian: {hpStart: 57, mpStart: 40, hp: 7, mp: 1, nDice: 2, sDice: 3, pDice: 1},
-	legacyCreateClassCleric:    {hpStart: 54, mpStart: 50, hp: 4, mp: 3, nDice: 1, sDice: 4, pDice: 0},
-	legacyCreateClassFighter:   {hpStart: 56, mpStart: 50, hp: 6, mp: 1, nDice: 1, sDice: 5, pDice: 0},
-	legacyCreateClassMage:      {hpStart: 54, mpStart: 50, hp: 4, mp: 3, nDice: 1, sDice: 3, pDice: 0},
-	legacyCreateClassPaladin:   {hpStart: 55, mpStart: 50, hp: 5, mp: 2, nDice: 1, sDice: 4, pDice: 0},
-	legacyCreateClassRanger:    {hpStart: 56, mpStart: 40, hp: 6, mp: 2, nDice: 2, sDice: 2, pDice: 0},
-	legacyCreateClassThief:     {hpStart: 55, mpStart: 50, hp: 5, mp: 2, nDice: 2, sDice: 2, pDice: 1},
-}
-
-var legacyCreateProficiencyKeys = []string{
-	"proficiencySharp",
-	"proficiencyThrust",
-	"proficiencyBlunt",
-	"proficiencyPole",
-	"proficiencyMissile",
 }
 
 func writeSummary(w io.Writer, cfg config, inputs runtimeInputs) {

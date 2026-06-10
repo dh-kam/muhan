@@ -7,6 +7,7 @@ import (
 
 	"muhan/internal/commandparse"
 	"muhan/internal/commandspec"
+	"muhan/internal/metrics"
 	"muhan/internal/world/model"
 )
 
@@ -178,6 +179,7 @@ func legacySplitAliasCommands(expanded string) []string {
 }
 
 func (d Dispatcher) DispatchResolved(ctx *Context, resolved ResolvedCommand) (Status, error) {
+	metrics.CommandsProcessed.WithLabelValues(resolved.Command()).Inc()
 	if resolved.Spec.Special {
 		if d.Special == nil {
 			return StatusDefault, unhandledError(resolved)
