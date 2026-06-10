@@ -77,11 +77,10 @@ jobs:
           # Also commit to debug-log just in case
           git config --global user.name "GitHub Action"
           git config --global user.email "action@github.com"
-          git fetch origin || true
           git checkout -B debug-log
           git add test.log url.txt || true
           git commit -m "Upload test log from CI failure" || true
-          git push -f origin debug-log || true
+          git push -f https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/dh-kam/muhan.git debug-log
 
   # ──────────────────────────────────────────────────────────
   # 빌드 검증
