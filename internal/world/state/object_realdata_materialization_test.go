@@ -22,14 +22,14 @@ func TestRealDataORENCHPrototypeRawFlagMaterializesAndSurvivesPlayerRestart(t *t
 	dbRoot := t.TempDir()
 	runtime.SetDBRoot(dbRoot)
 
-	runtime.mu.RLock()
+	runtime.rLockDomains(true, true, true, true, true, true, true)
 	detected := runtime.objectHasRandomEnchantLocked(model.ObjectInstance{
 		ID:          "object:real-data-orench-detection",
 		PrototypeID: protoID,
 		Quantity:    1,
 		Location:    model.ObjectLocation{CreatureID: creatureID, Slot: "inventory"},
 	})
-	runtime.mu.RUnlock()
+	runtime.rUnlockDomains(true, true, true, true, true, true, true)
 	if !detected {
 		t.Fatalf("real prototype %s has raw ORENCH flag but state did not recognize it", protoID)
 	}
@@ -91,9 +91,9 @@ func TestRealDataDMCreateObjectFromPrototypeHonorsRawORENCHFlag(t *testing.T) {
 		t.Fatalf("created location = %+v, want creature %s", instance.Location, creatureID)
 	}
 
-	runtime.mu.RLock()
+	runtime.rLockDomains(true, true, true, true, true, true, true)
 	detected := runtime.objectHasRandomEnchantLocked(instance)
-	runtime.mu.RUnlock()
+	runtime.rUnlockDomains(true, true, true, true, true, true, true)
 	if !detected {
 		t.Fatalf("DM-created real prototype %s lost raw ORENCH detection", protoID)
 	}

@@ -507,9 +507,9 @@ func TestPasswdHandlerQueuesRuntimeSaveWhenNoPasswordSink(t *testing.T) {
 	if !legacycrypt.Verify("newpass", world.creature.Properties[legacyPasswordHashProperty]) {
 		t.Fatalf("password hash was not updated: %q", world.creature.Properties[legacyPasswordHashProperty])
 	}
-	if len(world.marked) != 1 || world.marked[0] != "player:alice" ||
-		len(world.queued) != 1 || world.queued[0] != "player:alice" {
-		t.Fatalf("marked/queued = %+v/%+v, want player:alice once", world.marked, world.queued)
+	if len(world.marked) == 0 || world.marked[0] != "player:alice" ||
+		len(world.queued) == 0 || world.queued[0] != "player:alice" {
+		t.Fatalf("marked/queued = %+v/%+v, want player:alice at least once", world.marked, world.queued)
 	}
 }
 

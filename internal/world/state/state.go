@@ -42,7 +42,6 @@ type TrapState struct {
 
 // World is a mutable runtime view of the loaded world data.
 type World struct {
-	mu                sync.RWMutex // Legacy global lock
 	roomsMu           sync.RWMutex
 	playersMu         sync.RWMutex
 	creaturesMu       sync.RWMutex
