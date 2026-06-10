@@ -87,6 +87,7 @@ func TestSchemaV1LoadsMigrateQuietly(t *testing.T) {
 	}
 
 	world := state.NewWorld(nil)
+	defer world.Close()
 	world.SetDBRoot(root)
 	bank, ok, err := world.LoadBank("bank:player:alice")
 	if err != nil || !ok {
@@ -128,6 +129,7 @@ func TestSchemaFutureVersionRejected(t *testing.T) {
 		BankAccount:   model.BankAccount{ID: "bank:player:alice", OwnerName: "alice"},
 	})
 	world := state.NewWorld(nil)
+	defer world.Close()
 	world.SetDBRoot(root)
 	_, ok, err = world.LoadBank("bank:player:alice")
 	if err == nil {
@@ -164,6 +166,7 @@ func TestMalformedSidecarsRejected(t *testing.T) {
 	}
 
 	world := state.NewWorld(nil)
+	defer world.Close()
 	world.SetDBRoot(root)
 	if _, ok, err := world.LoadBank("bank:player:alice"); err == nil || ok || !strings.Contains(err.Error(), "parse bank JSON") {
 		t.Fatalf("LoadBank malformed = ok %v err %v, want parse error", ok, err)

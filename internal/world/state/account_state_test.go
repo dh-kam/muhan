@@ -29,6 +29,7 @@ func TestSetCreatureDescriptionUpdatesCanonicalField(t *testing.T) {
 	})
 
 	runtime := state.NewWorld(loaded)
+	defer runtime.Close()
 	updated, err := runtime.SetCreatureDescription("creature:alice", "new description ")
 	if err != nil {
 		t.Fatal(err)
@@ -67,6 +68,7 @@ func TestSetCreaturePasswordHashUsesCanonicalProperty(t *testing.T) {
 	})
 
 	runtime := state.NewWorld(loaded)
+	defer runtime.Close()
 	updated, err := runtime.SetCreaturePasswordHash("creature:alice", " hash-value ")
 	if err != nil {
 		t.Fatal(err)
@@ -102,6 +104,7 @@ func TestPreparePlayerSuicideMarksStateWithoutDeleting(t *testing.T) {
 	})
 
 	runtime := state.NewWorld(loaded)
+	defer runtime.Close()
 	player, creature, err := runtime.PreparePlayerSuicide("player:alice", 1234)
 	if err != nil {
 		t.Fatal(err)
@@ -159,6 +162,7 @@ func TestDustPlayerRemovesRuntimeOccupants(t *testing.T) {
 	})
 
 	runtime := state.NewWorld(loaded)
+	defer runtime.Close()
 	if err := runtime.SetCreatureCooldown("creature:alice", "attack", 1000, 1); err != nil {
 		t.Fatal(err)
 	}

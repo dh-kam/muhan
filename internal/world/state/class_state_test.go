@@ -38,6 +38,7 @@ func TestSetCreatureClassRecalculatesCombatStats(t *testing.T) {
 	})
 
 	runtime := state.NewWorld(loaded)
+	defer runtime.Close()
 	updated, err := runtime.SetCreatureClass("creature:alice", 13)
 	if err != nil {
 		t.Fatal(err)
@@ -95,6 +96,7 @@ func TestRecalculateCreatureCombatStatsUsesEquipmentAndFlags(t *testing.T) {
 	})
 
 	runtime := state.NewWorld(loaded)
+	defer runtime.Close()
 	updated, err := runtime.RecalculateCreatureCombatStats("creature:alice")
 	if err != nil {
 		t.Fatal(err)
@@ -136,6 +138,7 @@ func TestRecalculateCreatureTHACOUsesCSubDMProficiencyTotals(t *testing.T) {
 	})
 
 	runtime := state.NewWorld(loaded)
+	defer runtime.Close()
 	updated, err := runtime.RecalculateCreatureTHACO("creature:subdm")
 	if err != nil {
 		t.Fatal(err)
@@ -166,6 +169,7 @@ func TestUpdateFamilyMemberAfterClassChangeUpdatesMemberClass(t *testing.T) {
 	})
 
 	runtime := state.NewWorld(loaded)
+	defer runtime.Close()
 	if err := runtime.UpdateFamilyMemberAfterClassChange("Alice", 8, 7); err != nil {
 		t.Fatal(err)
 	}
@@ -199,6 +203,7 @@ func TestUpdateFamilyMemberAfterClassChangeMissingRowsAreNoop(t *testing.T) {
 	})
 
 	runtime := state.NewWorld(loaded)
+	defer runtime.Close()
 	for _, tc := range []struct {
 		name          string
 		dailyExpndMax int

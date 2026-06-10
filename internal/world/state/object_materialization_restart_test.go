@@ -13,6 +13,7 @@ import (
 func TestMaterializedORENCHObjectSurvivesCreateGiveDropSaveRestart(t *testing.T) {
 	dbRoot := t.TempDir()
 	runtime := state.NewWorld(materializationRestartWorld(t))
+	defer runtime.Close()
 	runtime.SetDBRoot(dbRoot)
 
 	bagID, err := runtime.CloneObjectToCreatureInventory("prototype:enchanted-bag", "creature:alice")
@@ -147,6 +148,7 @@ func restartWithPlayerSaves(t *testing.T, dbRoot string, playerIDs ...model.Play
 	t.Helper()
 
 	runtime := state.NewWorld(materializationRestartWorld(t))
+	defer runtime.Close()
 	runtime.SetDBRoot(dbRoot)
 	for _, playerID := range playerIDs {
 		save, ok, err := state.LoadPlayer(dbRoot, playerID)

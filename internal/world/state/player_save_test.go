@@ -67,6 +67,7 @@ func TestSavePlayer(t *testing.T) {
 	}
 
 	w := state.NewWorld(src)
+	defer w.Close()
 	w.SetDBRoot(tempDir)
 
 	err = w.SavePlayer(playerID)
@@ -152,6 +153,7 @@ func TestDestroyObjectMarksPlayerDirtyForRecursiveInventorySave(t *testing.T) {
 	}
 
 	w := state.NewWorld(src)
+	defer w.Close()
 	w.SetDBRoot(tempDir)
 	if err := w.DestroyObject("obj:bag"); err != nil {
 		t.Fatalf("DestroyObject() error = %v", err)
@@ -191,6 +193,7 @@ func TestSidecarNamesRejectPathTraversal(t *testing.T) {
 		src.Creatures[creatureID] = model.Creature{ID: creatureID, Kind: model.CreatureKindPlayer, PlayerID: playerID}
 
 		world := state.NewWorld(src)
+	defer world.Close()
 		world.SetDBRoot(tempDir)
 		if err := world.SavePlayer(playerID); err == nil || !strings.Contains(err.Error(), "unsafe") {
 			t.Fatalf("SavePlayer traversal error = %v, want unsafe", err)
@@ -228,6 +231,7 @@ func TestSidecarNamesRejectPathTraversal(t *testing.T) {
 		src.Banks[bankID] = model.BankAccount{ID: bankID, OwnerName: "../escape-bank"}
 
 		world := state.NewWorld(src)
+	defer world.Close()
 		world.SetDBRoot(tempDir)
 		if err := world.SaveBank(bankID); err == nil || !strings.Contains(err.Error(), "unsafe") {
 			t.Fatalf("SaveBank traversal error = %v, want unsafe", err)
@@ -254,6 +258,7 @@ func TestSidecarNamesRejectPathTraversal(t *testing.T) {
 			t.Fatal(err)
 		}
 		world := state.NewWorld(nil)
+	defer world.Close()
 		world.SetDBRoot(tempDir)
 		if _, ok, err := world.LoadBank("bank:player:../escape-bank"); err == nil || ok || !strings.Contains(err.Error(), "unsafe") {
 			t.Fatalf("LoadBank traversal = ok %v err %v, want unsafe error", ok, err)
@@ -263,6 +268,7 @@ func TestSidecarNamesRejectPathTraversal(t *testing.T) {
 	t.Run("board", func(t *testing.T) {
 		tempDir := t.TempDir()
 		world := state.NewWorld(nil)
+	defer world.Close()
 		world.SetDBRoot(tempDir)
 		if err := world.SaveBoardPosts("../escape-board"); err == nil || !strings.Contains(err.Error(), "unsafe") {
 			t.Fatalf("SaveBoardPosts traversal error = %v, want unsafe", err)
@@ -289,6 +295,7 @@ func TestSidecarNamesRejectPathTraversal(t *testing.T) {
 				src.Rooms[roomID] = model.Room{ID: roomID}
 
 				world := state.NewWorld(src)
+	defer world.Close()
 				world.SetDBRoot(tempDir)
 				if err := world.SavePlayer(playerID); err == nil || !strings.Contains(err.Error(), "unsafe") {
 					t.Fatalf("SavePlayer unicode slash error = %v, want unsafe", err)

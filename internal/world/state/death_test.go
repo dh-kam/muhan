@@ -86,6 +86,7 @@ func TestPlayerDeath_PvE(t *testing.T) {
 	}
 
 	w := state.NewWorld(src)
+	defer w.Close()
 	w.SetDBRoot(tempDir)
 
 	// Kill bob via PvE (attacker ID is zero/empty)
@@ -217,6 +218,7 @@ func TestPlayerDeathNormalizesStatAndPropertyKeys(t *testing.T) {
 	}
 
 	w := state.NewWorld(src)
+	defer w.Close()
 	w.SetDBRoot(tempDir)
 	if err := w.PlayerDeath(playerID, ""); err != nil {
 		t.Fatalf("PlayerDeath failed: %v", err)
@@ -279,6 +281,7 @@ func TestPlayerDeathAppliesLegacyDownLevelStatsAndPUPDMGRollback(t *testing.T) {
 	}
 
 	w := state.NewWorld(src)
+	defer w.Close()
 	w.SetDBRoot(tempDir)
 	if err := w.PlayerDeath(playerID, ""); err != nil {
 		t.Fatalf("PlayerDeath failed: %v", err)
@@ -406,6 +409,7 @@ func TestPlayerDeath_PvP(t *testing.T) {
 	}
 
 	w := state.NewWorld(src)
+	defer w.Close()
 	w.SetDBRoot(tempDir)
 
 	// Bob is killed by Alice (PvP)
@@ -511,6 +515,7 @@ func TestPlayerDeathSurvivalRoomKeepsInventoryAndEquipment(t *testing.T) {
 	}
 
 	w := state.NewWorld(src)
+	defer w.Close()
 	w.SetDBRoot(tempDir)
 
 	if err := w.PlayerDeath(player1ID, creature2ID); err != nil {
@@ -610,6 +615,7 @@ func TestPlayerDeathFamilyWarPairKeepsReadyEquipment(t *testing.T) {
 	}
 
 	w := state.NewWorld(src)
+	defer w.Close()
 	w.SetDBRoot(tempDir)
 	if _, err := w.RequestFamilyWar(2, 5); err != nil {
 		t.Fatalf("RequestFamilyWar: %v", err)

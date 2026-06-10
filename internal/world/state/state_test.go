@@ -39,6 +39,7 @@ func TestExpandFlagNamesIncludesLegacyCreatureAliases(t *testing.T) {
 
 func TestFamilyWarRequestAcceptAndClear(t *testing.T) {
 	runtime := state.NewWorld(nil)
+	defer runtime.Close()
 
 	snapshot, err := runtime.RequestFamilyWar(2, 5)
 	if err != nil {
@@ -97,6 +98,7 @@ func TestFamilyWarRequestAcceptAndClear(t *testing.T) {
 
 func TestFamilyWarCancelPendingRequest(t *testing.T) {
 	runtime := state.NewWorld(nil)
+	defer runtime.Close()
 	if _, err := runtime.RequestFamilyWar(7, 8); err != nil {
 		t.Fatal(err)
 	}
@@ -124,6 +126,7 @@ func TestFamilyWarCancelPendingRequest(t *testing.T) {
 
 func TestFamilyWarRejectsInvalidTransitionsWithoutMutation(t *testing.T) {
 	runtime := state.NewWorld(nil)
+	defer runtime.Close()
 	if _, err := runtime.RequestFamilyWar(0, 1); !errors.Is(err, state.ErrFamilyWarInvalidFamily) {
 		t.Fatalf("zero family error = %v, want ErrFamilyWarInvalidFamily", err)
 	}
@@ -177,6 +180,7 @@ func TestFamilyRegistryLookupsUseLoadedRegistryAndCopyDefensively(t *testing.T) 
 	})
 
 	runtime := state.NewWorld(loaded)
+	defer runtime.Close()
 
 	source := loaded.Families[2]
 	source.DisplayName = "changed"
@@ -300,6 +304,7 @@ func TestNewWorldCopiesInputAndGetterResults(t *testing.T) {
 	})
 
 	runtime := state.NewWorld(loaded)
+	defer runtime.Close()
 
 	room := loaded.Rooms["room:start"]
 	room.DisplayName = "Changed"
@@ -470,6 +475,7 @@ func TestNewWorldBuildsRoomOccupantsFromEntityRooms(t *testing.T) {
 	})
 
 	runtime := state.NewWorld(loaded)
+	defer runtime.Close()
 	room, ok := runtime.Room("room:start")
 	if !ok {
 		t.Fatal("missing room")
@@ -525,6 +531,7 @@ func TestRoomOccupantsUseLegacyNameOrderOnMoveAndSpawn(t *testing.T) {
 	})
 
 	runtime := state.NewWorld(loaded)
+	defer runtime.Close()
 	if err := runtime.MovePlayerToRoom("player:z-mover", "room:target"); err != nil {
 		t.Fatalf("MovePlayerToRoom() error = %v", err)
 	}
@@ -598,6 +605,7 @@ func TestMovePlayerRefreshesDuePermanentRoomSpawnsLikeAddPlyRom(t *testing.T) {
 	})
 
 	runtime := state.NewWorld(loaded)
+	defer runtime.Close()
 	if err := runtime.MovePlayerToRoom("player:alice", "room:target"); err != nil {
 		t.Fatalf("MovePlayerToRoom(target) error = %v", err)
 	}
@@ -687,6 +695,7 @@ func TestActiveCreaturesMatchesLegacyFirstActiveOccupiedRooms(t *testing.T) {
 	})
 
 	runtime := state.NewWorld(loaded)
+	defer runtime.Close()
 	active := runtime.ActiveCreatures()
 	got := make([]model.CreatureID, 0, len(active))
 	for _, creature := range active {
@@ -700,6 +709,7 @@ func TestActiveCreaturesMatchesLegacyFirstActiveOccupiedRooms(t *testing.T) {
 
 func TestMovePlayerUpdatesPlayerCreatureAndRooms(t *testing.T) {
 	runtime := state.NewWorld(movingWorld(t))
+	defer runtime.Close()
 
 	if err := runtime.MovePlayer("player:alice", "east"); err != nil {
 		t.Fatal(err)
@@ -742,6 +752,7 @@ func TestMovePlayerUpdatesPlayerCreatureAndRooms(t *testing.T) {
 
 func TestMovePlayerMissingExitDoesNotMutate(t *testing.T) {
 	runtime := state.NewWorld(movingWorld(t))
+	defer runtime.Close()
 
 	err := runtime.MovePlayer("player:alice", "north")
 	if err == nil {
@@ -779,6 +790,7 @@ func TestMovePlayerBlockedExitFlagsDoNotMutate(t *testing.T) {
 			room.Exits[0].Flags = []string{flag}
 			loaded.Rooms[room.ID] = room
 			runtime := state.NewWorld(loaded)
+	defer runtime.Close()
 
 			err := runtime.MovePlayer("player:alice", "east")
 			if err == nil {
@@ -844,6 +856,7 @@ func TestCheckRoomExitsRelocksAndReclosesExpiredLegacyTimers(t *testing.T) {
 	mustAddRoom(t, loaded, model.Room{ID: "room:end", DisplayName: "End"})
 
 	runtime := state.NewWorld(loaded)
+	defer runtime.Close()
 	if err := runtime.CheckRoomExits("room:start", 100); err != nil {
 		t.Fatalf("CheckRoomExits() error = %v", err)
 	}
@@ -873,6 +886,7 @@ func TestMovePlayerRefreshesTimedExitsOnTargetRoomLikeAddPlyRom(t *testing.T) {
 	}}
 	loaded.Rooms[east.ID] = east
 	runtime := state.NewWorld(loaded)
+	defer runtime.Close()
 
 	if err := runtime.MovePlayer("player:alice", "east"); err != nil {
 		t.Fatalf("MovePlayer() error = %v", err)
@@ -891,6 +905,7 @@ func TestMovePlayerAllowsVisibilityAndDoorCapabilityFlags(t *testing.T) {
 			room.Exits[0].Flags = []string{flag}
 			loaded.Rooms[room.ID] = room
 			runtime := state.NewWorld(loaded)
+	defer runtime.Close()
 
 			if err := runtime.MovePlayer("player:alice", "east"); err != nil {
 				t.Fatalf("MovePlayer() error = %v, want allowed flag", err)
@@ -941,6 +956,7 @@ func TestMovePlayerDestinationLevelRestrictionsDoNotMutate(t *testing.T) {
 			alice.Stats = tt.stats
 			loaded.Creatures[alice.ID] = alice
 			runtime := state.NewWorld(loaded)
+	defer runtime.Close()
 
 			err := runtime.MovePlayer("player:alice", "east")
 			if err == nil {
@@ -992,6 +1008,7 @@ func TestMovePlayerDestinationPlayerLimitsDoNotMutate(t *testing.T) {
 			loaded.Rooms[east.ID] = east
 			addMoveDestinationPlayers(t, loaded, tt.existingCount)
 			runtime := state.NewWorld(loaded)
+	defer runtime.Close()
 
 			err := runtime.MovePlayer("player:alice", "east")
 			if err == nil {
@@ -1024,6 +1041,7 @@ func TestMovePlayerDestinationPlayerLimitIgnoresPDMINVLikeCountVisPly(t *testing
 		Stats:       map[string]int{"PDMINV": 1},
 	})
 	runtime := state.NewWorld(loaded)
+	defer runtime.Close()
 
 	if err := runtime.MovePlayer("player:alice", "east"); err != nil {
 		t.Fatalf("MovePlayer() error = %v, want PDMINV occupant ignored for onePlayer limit", err)
@@ -1099,6 +1117,7 @@ func TestMovePlayerDestinationFamilyRestrictionsDoNotMutate(t *testing.T) {
 			loaded.Creatures[alice.ID] = alice
 			loaded.MarriageInvites = tt.invites
 			runtime := state.NewWorld(loaded)
+	defer runtime.Close()
 
 			err := runtime.MovePlayer("player:alice", "east")
 			if err == nil {
@@ -1224,6 +1243,7 @@ func TestMovePlayerAllowsDestinationFamilyRestrictions(t *testing.T) {
 			loaded.Creatures[alice.ID] = alice
 			loaded.MarriageInvites = tt.invites
 			runtime := state.NewWorld(loaded)
+	defer runtime.Close()
 
 			if err := runtime.MovePlayer("player:alice", "east"); err != nil {
 				t.Fatalf("MovePlayer() error = %v, want destination family restriction allowed", err)
@@ -1281,6 +1301,7 @@ func TestMovePlayerNakedExitRestrictionsDoNotMutate(t *testing.T) {
 				})
 			}
 			runtime := state.NewWorld(loaded)
+	defer runtime.Close()
 
 			err := runtime.MovePlayer("player:alice", "east")
 			if err == nil {
@@ -1368,6 +1389,7 @@ func TestMovePlayerAllowsNakedExitWithZeroWeightAndStaleRefs(t *testing.T) {
 				mustAddObject(t, loaded, object)
 			}
 			runtime := state.NewWorld(loaded)
+	defer runtime.Close()
 
 			if err := runtime.MovePlayer("player:alice", "east"); err != nil {
 				t.Fatalf("MovePlayer() error = %v, want zero carried weight allowed", err)
@@ -1386,6 +1408,7 @@ func TestMovePlayerAllowsNakedExitWithEmptyLinkedCreature(t *testing.T) {
 	start.Exits[0].Flags = []string{"naked"}
 	loaded.Rooms[start.ID] = start
 	runtime := state.NewWorld(loaded)
+	defer runtime.Close()
 
 	if err := runtime.MovePlayer("player:alice", "east"); err != nil {
 		t.Fatalf("MovePlayer() error = %v, want naked exit without carried objects allowed", err)
@@ -1399,6 +1422,7 @@ func TestMovePlayerAllowsNakedExitWithEmptyLinkedCreature(t *testing.T) {
 
 func TestMoveObjectRoomToCreatureInventoryUpdatesObjectAndHolderRefs(t *testing.T) {
 	runtime := state.NewWorld(objectMovingWorld(t))
+	defer runtime.Close()
 
 	if err := runtime.MoveObjectToCreatureInventory("object:sword", "creature:alice"); err != nil {
 		t.Fatal(err)
@@ -1476,6 +1500,7 @@ func TestMoveObjectAddsToHoldersUsingLegacyObjectOrder(t *testing.T) {
 	addSortObject("object:bag", "bag", 0)
 
 	runtime := state.NewWorld(loaded)
+	defer runtime.Close()
 	for _, id := range []model.ObjectInstanceID{"object:room-b2", "object:room-a", "object:room-b1"} {
 		if err := runtime.MoveObjectToRoom(id, "room:target"); err != nil {
 			t.Fatalf("MoveObjectToRoom(%s) error = %v", id, err)
@@ -1519,6 +1544,7 @@ func TestStealCreatureInventoryObjectMovesOnlyFromExpectedSource(t *testing.T) {
 		DisplayName: "Bob",
 	})
 	runtime := state.NewWorld(loaded)
+	defer runtime.Close()
 
 	moved, err := runtime.StealCreatureInventoryObject("object:potion", "creature:bob", "creature:alice")
 	if err != nil {
@@ -1555,6 +1581,7 @@ func TestStealCreatureInventoryObjectMovesOnlyFromExpectedSource(t *testing.T) {
 
 func TestMovePlayerToRoomUpdatesPlayerCreatureAndRooms(t *testing.T) {
 	runtime := state.NewWorld(movingWorld(t))
+	defer runtime.Close()
 
 	if err := runtime.MovePlayerToRoom("player:alice", "room:east"); err != nil {
 		t.Fatal(err)
@@ -1565,6 +1592,7 @@ func TestMovePlayerToRoomUpdatesPlayerCreatureAndRooms(t *testing.T) {
 
 func TestMoveObjectCreatureInventoryToRoomUpdatesObjectAndHolderRefs(t *testing.T) {
 	runtime := state.NewWorld(objectMovingWorld(t))
+	defer runtime.Close()
 
 	if err := runtime.MoveObjectToRoom("object:potion", "room:east"); err != nil {
 		t.Fatal(err)
@@ -1599,6 +1627,7 @@ func TestMoveObjectCreatureInventoryToRoomUpdatesObjectAndHolderRefs(t *testing.
 
 func TestMoveObjectRoomToContainerUpdatesObjectAndHolderRefs(t *testing.T) {
 	runtime := state.NewWorld(containerMovingWorld(t))
+	defer runtime.Close()
 
 	if err := runtime.MoveObject("object:sword", model.ObjectLocation{ContainerID: "object:box"}); err != nil {
 		t.Fatal(err)
@@ -1628,6 +1657,7 @@ func TestMoveObjectRoomToContainerUpdatesObjectAndHolderRefs(t *testing.T) {
 
 func TestMoveObjectContainerToCreatureInventoryUpdatesObjectAndHolderRefs(t *testing.T) {
 	runtime := state.NewWorld(containerMovingWorld(t))
+	defer runtime.Close()
 
 	if err := runtime.MoveObjectToCreatureInventory("object:gem", "creature:alice"); err != nil {
 		t.Fatal(err)
@@ -1662,6 +1692,7 @@ func TestMoveObjectContainerToCreatureInventoryUpdatesObjectAndHolderRefs(t *tes
 
 func TestMoveObjectCreatureInventoryToContainerUpdatesObjectAndHolderRefs(t *testing.T) {
 	runtime := state.NewWorld(containerMovingWorld(t))
+	defer runtime.Close()
 
 	if err := runtime.MoveObject("object:potion", model.ObjectLocation{ContainerID: "object:box"}); err != nil {
 		t.Fatal(err)
@@ -1690,6 +1721,7 @@ func TestMoveObjectCreatureInventoryToContainerUpdatesObjectAndHolderRefs(t *tes
 
 func TestMoveObjectRejectsSelfContainerCycleWithoutMutating(t *testing.T) {
 	runtime := state.NewWorld(containerMovingWorld(t))
+	defer runtime.Close()
 
 	err := runtime.MoveObject("object:box", model.ObjectLocation{ContainerID: "object:box"})
 	if err == nil {
@@ -1704,6 +1736,7 @@ func TestMoveObjectRejectsSelfContainerCycleWithoutMutating(t *testing.T) {
 
 func TestMoveObjectRejectsDescendantContainerCycleWithoutMutating(t *testing.T) {
 	runtime := state.NewWorld(containerMovingWorld(t))
+	defer runtime.Close()
 
 	err := runtime.MoveObject("object:box", model.ObjectLocation{ContainerID: "object:gem"})
 	if err == nil {
@@ -1722,6 +1755,7 @@ func TestMoveObjectValidationFailurePreservesHolderRefs(t *testing.T) {
 	sword.Quantity = -1
 	loaded.Objects["object:sword"] = sword
 	runtime := state.NewWorld(loaded)
+	defer runtime.Close()
 
 	err := runtime.MoveObject("object:sword", model.ObjectLocation{ContainerID: "object:box"})
 	if err == nil {
@@ -1751,6 +1785,7 @@ func TestMoveObjectValidationFailurePreservesHolderRefs(t *testing.T) {
 
 func TestMoveObjectMissingDestinationDoesNotMutate(t *testing.T) {
 	runtime := state.NewWorld(objectMovingWorld(t))
+	defer runtime.Close()
 
 	err := runtime.MoveObjectToCreatureInventory("object:sword", "creature:missing")
 	if err == nil {
@@ -1781,6 +1816,7 @@ func TestMoveObjectMissingDestinationDoesNotMutate(t *testing.T) {
 
 func TestCloneObjectToCreatureInventoryCopiesObjectAndHolderRefs(t *testing.T) {
 	runtime := state.NewWorld(containerMovingWorld(t))
+	defer runtime.Close()
 
 	clonedID, err := runtime.CloneObjectToCreatureInventory("object:box", "creature:alice")
 	if err != nil {
@@ -1869,6 +1905,7 @@ func TestCloneObjectToCreatureInventoryCanMaterializePrototypeTemplateContents(t
 		Location:    model.ObjectLocation{ContainerID: "object:template-bag"},
 	})
 	runtime := state.NewWorld(loaded)
+	defer runtime.Close()
 
 	clonedID, err := runtime.CloneObjectToCreatureInventory("prototype:bag", "creature:alice")
 	if err != nil {
@@ -1900,6 +1937,7 @@ func TestCloneObjectToCreatureInventoryCanMaterializePrototypeTemplateContents(t
 
 func TestCloneObjectToCreatureInventoryGeneratesUniqueIDs(t *testing.T) {
 	runtime := state.NewWorld(containerMovingWorld(t))
+	defer runtime.Close()
 
 	firstID, err := runtime.CloneObjectToCreatureInventory("object:sword", "creature:alice")
 	if err != nil {
@@ -1938,6 +1976,7 @@ func TestSpawnCreatureFixedGoldCarryUsesLegacyReducedSlotRange(t *testing.T) {
 	})
 
 	runtime := state.NewWorld(loaded)
+	defer runtime.Close()
 	const spawns = 200
 	totalCarry := 0
 	for i := 0; i < spawns; i++ {
@@ -1961,6 +2000,7 @@ func TestSpawnCreatureFixedGoldCarryUsesLegacyReducedSlotRange(t *testing.T) {
 
 func TestSetCreatureStat(t *testing.T) {
 	runtime := state.NewWorld(objectMovingWorld(t))
+	defer runtime.Close()
 
 	if err := runtime.SetCreatureStat("creature:alice", "gold", 12345); err != nil {
 		t.Fatalf("SetCreatureStat() error = %v", err)
@@ -1976,6 +2016,7 @@ func TestSetCreatureStat(t *testing.T) {
 
 func TestSetCreatureLevelMirrorsLegacyStat(t *testing.T) {
 	runtime := state.NewWorld(objectMovingWorld(t))
+	defer runtime.Close()
 
 	updated, err := runtime.SetCreatureLevel("creature:alice", 7)
 	if err != nil {
@@ -2020,6 +2061,7 @@ func TestRecalculateCreatureCombatStatsNormalizesStatAndPropertyKeys(t *testing.
 		Properties: map[string]string{"dex-terity": "50"},
 	})
 	runtime := state.NewWorld(loaded)
+	defer runtime.Close()
 
 	canonical, err := runtime.RecalculateCreatureCombatStats("creature:canonical")
 	if err != nil {
@@ -2076,6 +2118,7 @@ func TestRecalculateCreatureCombatStatsReadsStatBackedLegacyFlags(t *testing.T) 
 		mustAddCreature(t, loaded, creature)
 	}
 	runtime := state.NewWorld(loaded)
+	defer runtime.Close()
 
 	plain, err := runtime.RecalculateCreatureCombatStats("creature:plain")
 	if err != nil {
@@ -2117,6 +2160,7 @@ func TestUpdateCreatureFamilyStateReplacesLegacyAliases(t *testing.T) {
 		Metadata: model.Metadata{Tags: []string{"PFAMIL", "PFMBOS", "blessed"}},
 	})
 	runtime := state.NewWorld(loaded)
+	defer runtime.Close()
 
 	updated, err := runtime.UpdateCreatureFamilyState("creature:alice", 2, false, true, false)
 	if err != nil {
@@ -2173,6 +2217,7 @@ func TestTransferCreatureGoldMovesGoldAtomically(t *testing.T) {
 		Stats:       map[string]int{"gold": 25},
 	})
 	runtime := state.NewWorld(loaded)
+	defer runtime.Close()
 
 	fromGold, toGold, ok, err := runtime.TransferCreatureGold("creature:alice", "creature:bob", 70)
 	if err != nil {
@@ -2203,6 +2248,7 @@ func TestTransferCreatureGoldInsufficientGoldDoesNotMutate(t *testing.T) {
 		Stats:       map[string]int{"gold": 25},
 	})
 	runtime := state.NewWorld(loaded)
+	defer runtime.Close()
 
 	fromGold, toGold, ok, err := runtime.TransferCreatureGold("creature:alice", "creature:bob", 70)
 	if err != nil {
@@ -2230,6 +2276,7 @@ func TestSetDailyBroadcastCountRecordsLegacyLTime(t *testing.T) {
 		Properties:  map[string]string{"dailyBroadcastMax": "25"},
 	})
 	runtime := state.NewWorld(loaded)
+	defer runtime.Close()
 
 	if err := runtime.SetDailyBroadcastCount("creature:alice", 7); err != nil {
 		t.Fatalf("SetDailyBroadcastCount() error = %v", err)
@@ -2256,6 +2303,7 @@ func TestDropCreatureGoldToRoomCreatesMoneyObject(t *testing.T) {
 	alice.Stats = map[string]int{"gold": 100}
 	loaded.Creatures[alice.ID] = alice
 	runtime := state.NewWorld(loaded)
+	defer runtime.Close()
 
 	objectID, remainingGold, ok, err := runtime.DropCreatureGoldToRoom("creature:alice", "room:start", 70)
 	if err != nil {
@@ -2291,6 +2339,7 @@ func TestDropCreatureGoldToRoomInsufficientGoldDoesNotMutate(t *testing.T) {
 	alice.Stats = map[string]int{"gold": 50}
 	loaded.Creatures[alice.ID] = alice
 	runtime := state.NewWorld(loaded)
+	defer runtime.Close()
 
 	objectID, remainingGold, ok, err := runtime.DropCreatureGoldToRoom("creature:alice", "room:start", 70)
 	if err != nil {
@@ -2322,6 +2371,7 @@ func TestPickupMoneyObjectToCreatureGoldFromRoom(t *testing.T) {
 	room.Objects.ObjectIDs = append(room.Objects.ObjectIDs, "object:money")
 	loaded.Rooms[room.ID] = room
 	runtime := state.NewWorld(loaded)
+	defer runtime.Close()
 
 	newGold, amount, picked, err := runtime.PickupMoneyObjectToCreatureGold("object:money", model.ObjectLocation{RoomID: "room:start"}, "creature:alice")
 	if err != nil {
@@ -2365,6 +2415,7 @@ func TestPickupMoneyObjectToCreatureGoldFromContainerDecrementsCount(t *testing.
 		Properties:          map[string]string{"kind": "money", "type": "10", "value": "70"},
 	})
 	runtime := state.NewWorld(loaded)
+	defer runtime.Close()
 
 	newGold, amount, picked, err := runtime.PickupMoneyObjectToCreatureGold("object:money", model.ObjectLocation{ContainerID: "object:box"}, "creature:alice")
 	if err != nil {
@@ -2382,6 +2433,7 @@ func TestPickupMoneyObjectToCreatureGoldFromContainerDecrementsCount(t *testing.
 func TestDepositCreatureGoldToObjectValue(t *testing.T) {
 	loaded := bankValueWorld(t)
 	runtime := state.NewWorld(loaded)
+	defer runtime.Close()
 
 	remainingGold, value, ok, withinLimit, err := runtime.DepositCreatureGoldToObjectValue("creature:alice", "object:bank-root", 70, 200)
 	if err != nil {
@@ -2403,6 +2455,7 @@ func TestDepositCreatureGoldToObjectValue(t *testing.T) {
 func TestDepositCreatureGoldToObjectValueRejectsInsufficientGoldAndLimit(t *testing.T) {
 	loaded := bankValueWorld(t)
 	runtime := state.NewWorld(loaded)
+	defer runtime.Close()
 
 	remainingGold, value, ok, withinLimit, err := runtime.DepositCreatureGoldToObjectValue("creature:alice", "object:bank-root", 150, 300)
 	if err != nil {
@@ -2436,6 +2489,7 @@ func TestDepositCreatureGoldToObjectValueScaled(t *testing.T) {
 	root.Properties["value"] = "10"
 	loaded.Objects[root.ID] = root
 	runtime := state.NewWorld(loaded)
+	defer runtime.Close()
 
 	remainingGold, value, ok, withinLimit, err := runtime.DepositCreatureGoldToObjectValueScaled("creature:alice", "object:bank-root", 20000, 2, 20000, 1000000000)
 	if err != nil {
@@ -2460,6 +2514,7 @@ func TestDepositCreatureGoldToObjectValueScaledUsesSeparateLimitAmount(t *testin
 	root.Properties["value"] = "999990000"
 	loaded.Objects[root.ID] = root
 	runtime := state.NewWorld(loaded)
+	defer runtime.Close()
 
 	remainingGold, value, ok, withinLimit, err := runtime.DepositCreatureGoldToObjectValueScaled("creature:alice", "object:bank-root", 20000, 2, 20000, 1000000000)
 	if err != nil {
@@ -2478,6 +2533,7 @@ func TestDepositCreatureGoldToObjectValueScaledUsesSeparateLimitAmount(t *testin
 func TestWithdrawObjectValueToCreatureGold(t *testing.T) {
 	loaded := bankValueWorld(t)
 	runtime := state.NewWorld(loaded)
+	defer runtime.Close()
 
 	newGold, value, ok, err := runtime.WithdrawObjectValueToCreatureGold("object:bank-root", "creature:alice", 40)
 	if err != nil {
@@ -2499,6 +2555,7 @@ func TestWithdrawObjectValueToCreatureGoldScaled(t *testing.T) {
 	root.Properties["value"] = "10"
 	loaded.Objects[root.ID] = root
 	runtime := state.NewWorld(loaded)
+	defer runtime.Close()
 
 	newGold, value, ok, err := runtime.WithdrawObjectValueToCreatureGoldScaled("object:bank-root", "creature:alice", 2, 20000)
 	if err != nil {
@@ -2517,6 +2574,7 @@ func TestWithdrawObjectValueToCreatureGoldScaled(t *testing.T) {
 func TestWithdrawObjectValueToCreatureGoldRejectsInsufficientValue(t *testing.T) {
 	loaded := bankValueWorld(t)
 	runtime := state.NewWorld(loaded)
+	defer runtime.Close()
 
 	newGold, value, ok, err := runtime.WithdrawObjectValueToCreatureGold("object:bank-root", "creature:alice", 80)
 	if err != nil {
@@ -2534,6 +2592,7 @@ func TestWithdrawObjectValueToCreatureGoldRejectsInsufficientValue(t *testing.T)
 
 func TestStoreCreatureInventoryObjectInContainerUpdatesRefsAndCount(t *testing.T) {
 	runtime := state.NewWorld(containerMovingWorld(t))
+	defer runtime.Close()
 
 	newCount, stored, full, err := runtime.StoreCreatureInventoryObjectInContainer("object:potion", "creature:alice", "object:box", 2)
 	if err != nil {
@@ -2562,6 +2621,7 @@ func TestStoreCreatureInventoryObjectInContainerRejectsFullWithoutMutating(t *te
 	box.Properties["shotsCurrent"] = "1"
 	loaded.Objects[box.ID] = box
 	runtime := state.NewWorld(loaded)
+	defer runtime.Close()
 
 	newCount, stored, full, err := runtime.StoreCreatureInventoryObjectInContainer("object:potion", "creature:alice", "object:box", 1)
 	if err != nil {
@@ -2583,6 +2643,7 @@ func TestStoreCreatureInventoryObjectInContainerRejectsFullWithoutMutating(t *te
 
 func TestTakeContainerObjectToCreatureInventoryUpdatesRefsAndCount(t *testing.T) {
 	runtime := state.NewWorld(containerMovingWorld(t))
+	defer runtime.Close()
 
 	newCount, taken, err := runtime.TakeContainerObjectToCreatureInventory("object:pouch", "object:box", "creature:alice")
 	if err != nil {
@@ -2607,6 +2668,7 @@ func TestTakeContainerObjectToCreatureInventoryUpdatesRefsAndCount(t *testing.T)
 
 func TestTakeContainerObjectToCreatureInventoryRejectsStaleSourceWithoutMutating(t *testing.T) {
 	runtime := state.NewWorld(containerMovingWorld(t))
+	defer runtime.Close()
 
 	newCount, taken, err := runtime.TakeContainerObjectToCreatureInventory("object:potion", "object:box", "creature:alice")
 	if err != nil {
@@ -2631,6 +2693,7 @@ func TestPurchaseObjectToCreatureInventoryClonesAndDebitsGoldAtomically(t *testi
 	creature.Stats = map[string]int{"gold": 100}
 	loaded.Creatures[creature.ID] = creature
 	runtime := state.NewWorld(loaded)
+	defer runtime.Close()
 
 	clonedID, remaining, affordable, err := runtime.PurchaseObjectToCreatureInventory("object:sword", "creature:alice", 70)
 	if err != nil {
@@ -2665,6 +2728,7 @@ func TestPurchaseObjectToCreatureInventoryInsufficientGoldDoesNotMutate(t *testi
 	creature.Stats = map[string]int{"gold": 50}
 	loaded.Creatures[creature.ID] = creature
 	runtime := state.NewWorld(loaded)
+	defer runtime.Close()
 
 	clonedID, remaining, affordable, err := runtime.PurchaseObjectToCreatureInventory("object:sword", "creature:alice", 70)
 	if err != nil {
@@ -2691,6 +2755,7 @@ func TestSellObjectFromCreatureInventoryCreditsGoldAndDeletesObject(t *testing.T
 	creature.Stats = map[string]int{"gold": 40}
 	loaded.Creatures[creature.ID] = creature
 	runtime := state.NewWorld(loaded)
+	defer runtime.Close()
 
 	newGold, sold, err := runtime.SellObjectFromCreatureInventory("object:potion", "creature:alice", 70)
 	if err != nil {
@@ -2721,6 +2786,7 @@ func TestSellObjectFromCreatureInventoryRejectsUnownedObjectDoesNotMutate(t *tes
 	creature.Stats = map[string]int{"gold": 40}
 	loaded.Creatures[creature.ID] = creature
 	runtime := state.NewWorld(loaded)
+	defer runtime.Close()
 
 	newGold, sold, err := runtime.SellObjectFromCreatureInventory("object:sword", "creature:alice", 70)
 	if err != nil {
@@ -2759,6 +2825,7 @@ func TestSellObjectFromCreatureInventoryRejectsContainerWithContentsDoesNotMutat
 	box.Location = model.ObjectLocation{CreatureID: "creature:alice", Slot: "inventory"}
 	loaded.Objects[box.ID] = box
 	runtime := state.NewWorld(loaded)
+	defer runtime.Close()
 
 	newGold, sold, err := runtime.SellObjectFromCreatureInventory("object:box", "creature:alice", 70)
 	if err == nil || !strings.Contains(err.Error(), "object has contents") {
@@ -2796,6 +2863,7 @@ func TestApplyCreatureDamageUpdatesHPCurrentAndKeepsRoomOccupant(t *testing.T) {
 		Stats:       map[string]int{"hpCurrent": 10, "hpMax": 10, "gold": 3},
 	})
 	runtime := state.NewWorld(loaded)
+	defer runtime.Close()
 
 	updated, applied, dead, err := runtime.ApplyCreatureDamage("creature:goblin", 4)
 	if err != nil {
@@ -2844,6 +2912,7 @@ func TestApplyCreatureDamageZeroAndNegativeDamage(t *testing.T) {
 		Stats:       map[string]int{"hpCurrent": 7},
 	})
 	runtime := state.NewWorld(loaded)
+	defer runtime.Close()
 
 	updated, applied, dead, err := runtime.ApplyCreatureDamage("creature:goblin", 0)
 	if err != nil {
@@ -2871,6 +2940,7 @@ func TestApplyCreatureDamageRequiresHPCurrent(t *testing.T) {
 		Stats:       map[string]int{"hpMax": 10},
 	})
 	runtime := state.NewWorld(loaded)
+	defer runtime.Close()
 
 	if _, _, _, err := runtime.ApplyCreatureDamage("creature:statue", 5); err == nil || !strings.Contains(err.Error(), "hpCurrent") {
 		t.Fatalf("ApplyCreatureDamage() error = %v, want hpCurrent error", err)
@@ -2899,6 +2969,7 @@ func TestFinalizeMonsterDeathDropsInventoryAndGold(t *testing.T) {
 		Location:    model.ObjectLocation{CreatureID: "creature:goblin", Slot: "inventory"},
 	})
 	runtime := state.NewWorld(loaded)
+	defer runtime.Close()
 
 	finalized, err := runtime.FinalizeMonsterDeath("creature:goblin")
 	if err != nil {
@@ -2988,6 +3059,7 @@ func TestFinalizeMonsterDeathAwardsDamageProportionalExperienceAndAlignment(t *t
 		Location:    model.ObjectLocation{CreatureID: "creature:alice", Slot: "wield"},
 	})
 	runtime := state.NewWorld(loaded)
+	defer runtime.Close()
 
 	if err := runtime.RecordCreatureDamage("creature:goblin", "creature:alice", 4); err != nil {
 		t.Fatalf("RecordCreatureDamage(alice) error = %v", err)
@@ -3087,6 +3159,7 @@ func TestFinalizeMonsterDeathAwardsGroupBonusFromSnapshot(t *testing.T) {
 		mustAddCreature(t, loaded, creature)
 	}
 	runtime := state.NewWorld(loaded)
+	defer runtime.Close()
 
 	for _, damage := range []struct {
 		attacker model.CreatureID
@@ -3147,6 +3220,7 @@ func TestFinalizeMonsterDeathTradeItemsNoDropDeletesCarriedObjects(t *testing.T)
 		Location:    model.ObjectLocation{CreatureID: "creature:merchant", Slot: "inventory"},
 	})
 	runtime := state.NewWorld(loaded)
+	defer runtime.Close()
 
 	finalized, err := runtime.FinalizeMonsterDeath("creature:merchant")
 	if err != nil {
@@ -3192,6 +3266,7 @@ func TestFinalizeMonsterDeathTradeItemsReadsStatBackedMTRADE(t *testing.T) {
 		Location:    model.ObjectLocation{CreatureID: "creature:merchant", Slot: "inventory"},
 	})
 	runtime := state.NewWorld(loaded)
+	defer runtime.Close()
 
 	finalized, err := runtime.FinalizeMonsterDeath("creature:merchant")
 	if err != nil {
@@ -3229,6 +3304,7 @@ func TestFinalizeMonsterDeathRejectsLiveAndPlayerCreatures(t *testing.T) {
 		Stats:       map[string]int{"hpCurrent": 0},
 	})
 	runtime := state.NewWorld(loaded)
+	defer runtime.Close()
 
 	finalized, err := runtime.FinalizeMonsterDeath("creature:goblin")
 	if err != nil {
@@ -3254,6 +3330,7 @@ func TestUpdateCreatureTagsAddsAndRemovesByNormalizedName(t *testing.T) {
 		Metadata:    model.Metadata{Tags: []string{"PHIDDN", "blessed"}},
 	})
 	runtime := state.NewWorld(loaded)
+	defer runtime.Close()
 
 	updated, err := runtime.UpdateCreatureTags("creature:alice", []string{"hidden"}, []string{"phiddn"})
 	if err != nil {
@@ -3277,6 +3354,7 @@ func TestUseCreatureCooldownStartsAndReportsRemainingTime(t *testing.T) {
 	loaded := worldload.NewWorld()
 	mustAddCreature(t, loaded, model.Creature{ID: "creature:alice", Kind: model.CreatureKindMonster, DisplayName: "Alice"})
 	runtime := state.NewWorld(loaded)
+	defer runtime.Close()
 
 	remaining, used, err := runtime.UseCreatureCooldown("creature:alice", "search", 100, 7)
 	if err != nil {
@@ -3305,6 +3383,7 @@ func TestSetCreatureCooldownReplacesNamedCooldown(t *testing.T) {
 	loaded := worldload.NewWorld()
 	mustAddCreature(t, loaded, model.Creature{ID: "creature:alice", Kind: model.CreatureKindMonster, DisplayName: "Alice"})
 	runtime := state.NewWorld(loaded)
+	defer runtime.Close()
 
 	if err := runtime.SetCreatureCooldown("creature:alice", "plykl", 100, 7*86400); err != nil {
 		t.Fatalf("SetCreatureCooldown() first error = %v", err)
@@ -3337,6 +3416,7 @@ func TestUpdatePlayerTagsAddsAndRemovesByNormalizedName(t *testing.T) {
 		Metadata:    model.Metadata{Tags: []string{"PHIDDN", "ansi"}},
 	})
 	runtime := state.NewWorld(loaded)
+	defer runtime.Close()
 
 	updated, err := runtime.UpdatePlayerTags("player:alice", []string{"hidden"}, []string{"phiddn"})
 	if err != nil {
@@ -3366,6 +3446,7 @@ func TestSetCreaturePropertySetsDeletesAndClones(t *testing.T) {
 		t.Fatal(err)
 	}
 	runtime := state.NewWorld(loaded)
+	defer runtime.Close()
 
 	updated, err := runtime.SetCreatureProperty("creature:alice", "legacyTitle", "별칭")
 	if err != nil {
@@ -3404,6 +3485,7 @@ func TestUpdateObjectTagsAddsAndRemovesByNormalizedName(t *testing.T) {
 		Metadata:    model.Metadata{Tags: []string{"OHIDDN", "event"}},
 	})
 	runtime := state.NewWorld(loaded)
+	defer runtime.Close()
 
 	updated, err := runtime.UpdateObjectTags("object:sword", []string{"hidden"}, []string{"hidden"})
 	if err != nil {
@@ -3863,6 +3945,7 @@ func TestRoomFloorObjects_RoundtripAndRestartSim(t *testing.T) {
 	tmp := t.TempDir()
 	loaded := roomFloorTestWorld(t)
 	runtime := state.NewWorld(loaded)
+	defer runtime.Close()
 	runtime.SetDBRoot(tmp)
 
 	// 1. Drop money (direct floor) - exercises Drop + mark + Save
@@ -3908,6 +3991,7 @@ func TestRoomFloorObjects_RoundtripAndRestartSim(t *testing.T) {
 	// 4. Simulate restart: fresh world + merge
 	loaded2 := roomFloorTestWorld(t) // fresh, has only static
 	runtime2 := state.NewWorld(loaded2)
+	defer runtime2.Close()
 	runtime2.SetDBRoot(tmp)
 
 	saved, okLoad, err := state.LoadRoomObjects(tmp, "room:floor1")
@@ -3948,6 +4032,7 @@ func TestRoomFloorObjects_DeathCorpseAndPickup(t *testing.T) {
 	tmp := t.TempDir()
 	loaded := roomFloorTestWorld(t)
 	runtime := state.NewWorld(loaded)
+	defer runtime.Close()
 	runtime.SetDBRoot(tmp)
 
 	// Use PlayerDeath path (exercises corpse spawn + mark + item scatter to corpse on floor)
@@ -3962,6 +4047,7 @@ func TestRoomFloorObjects_DeathCorpseAndPickup(t *testing.T) {
 	// Restart merge
 	loaded2 := roomFloorTestWorld(t)
 	r2 := state.NewWorld(loaded2)
+	defer r2.Close()
 	r2.SetDBRoot(tmp)
 	sav, _, _ := state.LoadRoomObjects(tmp, "room:floor1")
 	r2.MergeRoomObjectsSaveIntoWorld(sav)
@@ -3975,6 +4061,7 @@ func TestRoomFloorObjects_MoneyPickupAndPersist(t *testing.T) {
 	tmp := t.TempDir()
 	loaded := roomFloorTestWorld(t)
 	runtime := state.NewWorld(loaded)
+	defer runtime.Close()
 	runtime.SetDBRoot(tmp)
 
 	oid, _, _, _ := runtime.DropCreatureGoldToRoom("creature:tester", "room:floor1", 77)
@@ -3991,6 +4078,7 @@ func TestRoomFloorObjects_MoneyPickupAndPersist(t *testing.T) {
 	// Restart: money gone
 	loaded2 := roomFloorTestWorld(t)
 	r2 := state.NewWorld(loaded2)
+	defer r2.Close()
 	r2.SetDBRoot(tmp)
 	sav, _, _ := state.LoadRoomObjects(tmp, "room:floor1")
 	r2.MergeRoomObjectsSaveIntoWorld(sav)
@@ -4004,6 +4092,7 @@ func TestRoomFloorObjects_DirtyFlushAndEmptiedRoom(t *testing.T) {
 	tmp := t.TempDir()
 	loaded := roomFloorTestWorld(t)
 	runtime := state.NewWorld(loaded)
+	defer runtime.Close()
 	runtime.SetDBRoot(tmp)
 
 	// Drop then pickup all -> room empties
@@ -4027,6 +4116,7 @@ func TestRoomFloorObjects_RoomPropertiesDirtyFlushAndRestart(t *testing.T) {
 	tmp := t.TempDir()
 	loaded := roomFloorTestWorld(t)
 	runtime := state.NewWorld(loaded)
+	defer runtime.Close()
 	runtime.SetDBRoot(tmp)
 
 	if err := runtime.UpdateRoomProperty("room:floor1", "perm_mon.0.ltime", "123456"); err != nil {
@@ -4049,6 +4139,7 @@ func TestRoomFloorObjects_RoomPropertiesDirtyFlushAndRestart(t *testing.T) {
 
 	loaded2 := roomFloorTestWorld(t)
 	restarted := state.NewWorld(loaded2)
+	defer restarted.Close()
 	restarted.SetDBRoot(tmp)
 	if err := restarted.MergeRoomObjectsSaveIntoWorld(saved); err != nil {
 		t.Fatalf("MergeRoomObjectsSaveIntoWorld: %v", err)

@@ -112,6 +112,7 @@ func TestRestoreFamilyBankSidecarsMergesOnlyFamilyBanks(t *testing.T) {
 		Location:    model.ObjectLocation{BankID: "bank:player:Alice", Slot: "bank"},
 	})
 	savedWorld := state.NewWorld(savedLoaded)
+	defer savedWorld.Close()
 	savedWorld.SetDBRoot(root)
 	if err := savedWorld.SaveBank("bank:family:무영문_3"); err != nil {
 		t.Fatalf("SaveBank(family): %v", err)
@@ -132,6 +133,7 @@ func TestRestoreFamilyBankSidecarsMergesOnlyFamilyBanks(t *testing.T) {
 		OwnerName: "Alice",
 	})
 	freshWorld := state.NewWorld(freshLoaded)
+	defer freshWorld.Close()
 	freshWorld.SetDBRoot(root)
 
 	if got := restoreFamilyBankSidecars(root, freshWorld); got != 1 {
