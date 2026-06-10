@@ -33,7 +33,7 @@ Muhan_related.zip
 muhan.tgz
 
 # Legacy C source (Go 빌드에 불필요)
-src/
+/src/
 
 # Node modules (webui-builder에서 새로 설치)
 webui/node_modules/
