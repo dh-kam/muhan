@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"strings"
 	"testing"
-	"time"
 
 	"muhan/internal/commandspec"
 	worldload "muhan/internal/world/load"
@@ -91,7 +90,7 @@ func TestShopBuyHandlerBuysStockIntoInventory(t *testing.T) {
 	for _, line := range []string{"목검 사", "사 기념패"} {
 		t.Run(line, func(t *testing.T) {
 			world := state.NewWorld(shopBuyWorld(t, true, 60000))
-	defer world.Close()
+			defer world.Close()
 			dispatcher.Handlers["buy"] = NewShopBuyHandler(world)
 			ctx := &Context{ActorID: "player:alice"}
 			status, err := dispatcher.DispatchLine(ctx, line)
@@ -220,7 +219,7 @@ func TestShopBuyHandlerQueuesPlayerSave(t *testing.T) {
 	}
 	world.FlushSaveQueue()
 
-	save := waitForShopPlayerSave(t, root, "player:alice")
+	save := waitForShopPlayerSave(t, world, root, "player:alice")
 	if save.Creature == nil {
 		t.Fatal("saved creature is nil")
 	}
@@ -238,7 +237,7 @@ func TestShopBuyHandlerQueuesPlayerSave(t *testing.T) {
 func TestShopHandlersUseOnlyFirstArgumentLikeLegacy(t *testing.T) {
 	t.Run("buy", func(t *testing.T) {
 		world := state.NewWorld(shopBuyWorld(t, true, 60000))
-	defer world.Close()
+		defer world.Close()
 		handler := NewShopBuyHandler(world)
 		ctx := shopSellTestContext()
 
@@ -260,7 +259,7 @@ func TestShopHandlersUseOnlyFirstArgumentLikeLegacy(t *testing.T) {
 
 	t.Run("sell", func(t *testing.T) {
 		world := state.NewWorld(shopSellWorld(t, "pawnShop", "50000", 1000))
-	defer world.Close()
+		defer world.Close()
 		handler := NewShopSellHandler(world)
 		ctx := &Context{ActorID: "player:alice", Values: map[string]any{ContextShopSellBonusKey: false}}
 
@@ -278,7 +277,7 @@ func TestShopHandlersUseOnlyFirstArgumentLikeLegacy(t *testing.T) {
 
 	t.Run("value", func(t *testing.T) {
 		world := state.NewWorld(shopValueWorld(t, "pawnShop", "50000"))
-	defer world.Close()
+		defer world.Close()
 		handler := NewShopValueHandler(world)
 		ctx := &Context{ActorID: "player:alice"}
 
@@ -328,7 +327,7 @@ func TestShopBuyHandlerRejectsInvalidPurchases(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			world := state.NewWorld(tt.world)
-	defer world.Close()
+			defer world.Close()
 			handler := NewShopBuyHandler(world)
 			ctx := shopSellTestContext()
 			status, err := handler(ctx, tt.cmd)
@@ -406,7 +405,7 @@ func TestShopSellHandlerSellsInventoryAtPawnShop(t *testing.T) {
 	for _, line := range []string{"목검 팔아", "팔아 목검"} {
 		t.Run(line, func(t *testing.T) {
 			world := state.NewWorld(shopSellWorld(t, "pawnShop", "50000", 1000))
-	defer world.Close()
+			defer world.Close()
 			dispatcher := Dispatcher{
 				Registry: mustRegistry(t, []commandspec.CommandSpec{
 					{Name: "팔아", Number: 43, Handler: "sell"},
@@ -526,7 +525,7 @@ func TestShopSellHandlerQueuesPlayerSave(t *testing.T) {
 	}
 	world.FlushSaveQueue()
 
-	save := waitForShopPlayerSave(t, root, "player:alice")
+	save := waitForShopPlayerSave(t, world, root, "player:alice")
 	if save.Creature == nil {
 		t.Fatal("saved creature is nil")
 	}
@@ -678,7 +677,7 @@ func TestShopSellHandlerRejectsUnsupportedRoomsAndMissingTargets(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			world := state.NewWorld(shopSellWorld(t, tt.room, "50000", 1000))
-	defer world.Close()
+			defer world.Close()
 			handler := NewShopSellHandler(world)
 			ctx := &Context{ActorID: "player:alice"}
 			status, err := handler(ctx, tt.cmd)
@@ -766,7 +765,7 @@ func TestShopSellHandlerRejectsLegacyUnsupportedObjects(t *testing.T) {
 			loaded := shopSellWorld(t, "pawnShop", "50000", 1000)
 			tt.mutate(loaded)
 			world := state.NewWorld(loaded)
-	defer world.Close()
+			defer world.Close()
 			handler := NewShopSellHandler(world)
 			ctx := &Context{ActorID: "player:alice"}
 			status, err := handler(ctx, ResolvedCommand{Args: []string{"목검"}, Values: []int64{1}})
@@ -1155,22 +1154,15 @@ func shopSellTestContext() *Context {
 	}
 }
 
-func waitForShopPlayerSave(t *testing.T, root string, playerID model.PlayerID) state.PlayerSaveData {
+func waitForShopPlayerSave(t *testing.T, world *state.World, root string, playerID model.PlayerID) state.PlayerSaveData {
 	t.Helper()
-	deadline := time.Now().Add(2 * time.Second)
-	var lastErr error
-	for time.Now().Before(deadline) {
-		save, ok, err := state.LoadPlayer(root, playerID)
-		if err != nil {
-			lastErr = err
-		} else if ok {
-			return save
-		}
-		time.Sleep(20 * time.Millisecond)
+	world.FlushSaveQueue()
+	save, ok, err := state.LoadPlayer(root, playerID)
+	if err != nil {
+		t.Fatalf("LoadPlayer(%s) error after flush: %v", playerID, err)
 	}
-	if lastErr != nil {
-		t.Fatalf("LoadPlayer(%s) error while waiting for queued save: %v", playerID, lastErr)
+	if !ok {
+		t.Fatalf("LoadPlayer(%s) ok=false after flush", playerID)
 	}
-	t.Fatalf("timed out waiting for queued player save %s", playerID)
-	return state.PlayerSaveData{}
+	return save
 }

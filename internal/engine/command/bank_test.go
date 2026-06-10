@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"strings"
 	"testing"
-	"time"
 
 	worldload "muhan/internal/world/load"
 	"muhan/internal/world/model"
@@ -268,7 +267,7 @@ func TestBankInventoryHandlerQueuesSaveAfterObjectStore(t *testing.T) {
 	}
 	world.FlushSaveQueue()
 
-	playerSave := waitForBankPlayerSave(t, rootDir, "Alice")
+	playerSave := waitForBankPlayerSave(t, world, rootDir, "Alice")
 	if playerSave.Creature == nil {
 		t.Fatal("saved creature is nil")
 	}
@@ -412,7 +411,7 @@ func TestBankInventoryHandlerStoreAllQuestItemsRequireDMLikeLegacy(t *testing.T)
 			creature.Stats["class"] = tt.class
 			loaded.Creatures[creature.ID] = creature
 			world := state.NewWorld(loaded)
-	defer world.Close()
+			defer world.Close()
 			ctx := &Context{ActorID: "Alice"}
 
 			status, err := NewBankInventoryHandler(world)(ctx, ResolvedCommand{Args: []string{"모든성물"}})
@@ -732,7 +731,7 @@ func TestBankDepositRejectsUsageAndNegativeAmountLikeLegacy(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			world := state.NewWorld(bankTestWorld(t, true, true))
-	defer world.Close()
+			defer world.Close()
 			ctx := &Context{ActorID: "Alice"}
 
 			status, err := NewBankDepositHandler(world)(ctx, ResolvedCommand{Args: tt.args})
@@ -857,7 +856,7 @@ func TestBankWithdrawRejectsUsageAndNegativeAmountLikeLegacy(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			world := state.NewWorld(bankTestWorld(t, true, true))
-	defer world.Close()
+			defer world.Close()
 			ctx := &Context{ActorID: "Alice"}
 
 			status, err := NewBankWithdrawHandler(world)(ctx, ResolvedCommand{Args: tt.args})
@@ -1166,7 +1165,7 @@ func TestBankOutputHandlerQueuesSaveAfterObjectTake(t *testing.T) {
 	}
 	world.FlushSaveQueue()
 
-	playerSave := waitForBankPlayerSave(t, rootDir, "Alice")
+	playerSave := waitForBankPlayerSave(t, world, rootDir, "Alice")
 	if playerSave.Creature == nil {
 		t.Fatal("saved creature is nil")
 	}
@@ -1552,44 +1551,30 @@ func bankTestAddInventoryObject(t *testing.T, loaded *worldload.World, objectID 
 	loaded.Creatures[creature.ID] = creature
 }
 
-func waitForBankPlayerSave(t *testing.T, root string, playerID model.PlayerID) state.PlayerSaveData {
+func waitForBankPlayerSave(t *testing.T, world *state.World, root string, playerID model.PlayerID) state.PlayerSaveData {
 	t.Helper()
-	deadline := time.Now().Add(2 * time.Second)
-	var lastErr error
-	for time.Now().Before(deadline) {
-		save, ok, err := state.LoadPlayer(root, playerID)
-		if err != nil {
-			lastErr = err
-		} else if ok {
-			return save
-		}
-		time.Sleep(20 * time.Millisecond)
+	world.FlushSaveQueue()
+	save, ok, err := state.LoadPlayer(root, playerID)
+	if err != nil {
+		t.Fatalf("LoadPlayer(%s) error after flush: %v", playerID, err)
 	}
-	if lastErr != nil {
-		t.Fatalf("LoadPlayer(%s) error while waiting for queued save: %v", playerID, lastErr)
+	if !ok {
+		t.Fatalf("LoadPlayer(%s) ok=false after flush", playerID)
 	}
-	t.Fatalf("timed out waiting for queued player save %s", playerID)
-	return state.PlayerSaveData{}
+	return save
 }
 
 func waitForBankSave(t *testing.T, world *state.World, bankID model.BankID) model.BankSaveBundle {
 	t.Helper()
-	deadline := time.Now().Add(2 * time.Second)
-	var lastErr error
-	for time.Now().Before(deadline) {
-		save, ok, err := world.LoadBank(bankID)
-		if err != nil {
-			lastErr = err
-		} else if ok {
-			return save
-		}
-		time.Sleep(20 * time.Millisecond)
+	world.FlushSaveQueue()
+	save, ok, err := world.LoadBank(bankID)
+	if err != nil {
+		t.Fatalf("LoadBank(%s) error after flush: %v", bankID, err)
 	}
-	if lastErr != nil {
-		t.Fatalf("LoadBank(%s) error while waiting for queued save: %v", bankID, lastErr)
+	if !ok {
+		t.Fatalf("LoadBank(%s) ok=false after flush", bankID)
 	}
-	t.Fatalf("timed out waiting for queued bank save %s", bankID)
-	return model.BankSaveBundle{}
+	return save
 }
 
 func bankSaveObject(bundle model.BankSaveBundle, id model.ObjectInstanceID) (model.ObjectInstance, bool) {
