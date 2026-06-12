@@ -14,12 +14,17 @@ WORKDIR /build
 COPY go.mod go.sum ./
 RUN go mod download
 
+# 버전 정보 (빌드 시 --build-arg로 주입 가능)
+ARG VERSION=dev
+ARG COMMIT=unknown
+ARG BUILD_DATE=unknown
+
 # 소스 전체 복사 및 빌드
 COPY cmd/ ./cmd/
 COPY internal/ ./internal/
 
 RUN CGO_ENABLED=0 GOOS=linux go build \
-    -ldflags="-s -w" \
+    -ldflags="-s -w -X main.version=${VERSION} -X main.commit=${COMMIT} -X main.buildDate=${BUILD_DATE}" \
     -o /muhan-server \
     ./cmd/muhan-server/
 

@@ -6,6 +6,15 @@ import (
 	"io"
 )
 
+// Version information — injected via ldflags at build time.
+//
+//	go build -ldflags="-X main.version=0.9.0 -X main.commit=abc1234 -X main.buildDate=2025-01-01T00:00:00Z"
+var (
+	version   = "dev"
+	commit    = "unknown"
+	buildDate = "unknown"
+)
+
 type config struct {
 	root          string
 	listen        string
@@ -16,6 +25,7 @@ type config struct {
 	validate      bool
 	dryRun        bool
 	migrate       bool
+	showVersion   bool
 }
 
 type validationError struct {
@@ -40,6 +50,7 @@ func parseFlags(args []string, stderr io.Writer) (config, error) {
 	validate := fs.Bool("validate", false, "load and validate runtime inputs, then exit without listening")
 	dryRun := fs.Bool("dry-run", false, "load runtime inputs, then exit without listening")
 	migrate := fs.Bool("migrate-sidecars", false, "rewrite supported old JSON sidecar schemas before startup")
+	showVersion := fs.Bool("version", false, "print version information and exit")
 
 	if err := fs.Parse(args); err != nil {
 		return config{}, err
@@ -60,5 +71,6 @@ func parseFlags(args []string, stderr io.Writer) (config, error) {
 		validate:      *validate,
 		dryRun:        *dryRun,
 		migrate:       *migrate,
+		showVersion:   *showVersion,
 	}, nil
 }

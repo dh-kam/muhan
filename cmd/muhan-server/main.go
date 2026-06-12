@@ -52,6 +52,11 @@ func run(args []string, stdout, stderr io.Writer) int {
 		return 2
 	}
 
+	if cfg.showVersion {
+		fmt.Fprintf(stdout, "muhan-server %s (commit=%s, built=%s)\n", version, commit, buildDate)
+		return 0
+	}
+
 	logger := slog.New(slog.NewJSONHandler(stdout, nil))
 	slog.SetDefault(logger)
 

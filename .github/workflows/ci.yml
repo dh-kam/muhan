@@ -4,12 +4,13 @@
 #  트리거:
 #    - main 브랜치로 push
 #    - main 브랜치 대상 pull_request
+#    - 수동 트리거 (workflow_dispatch)
 #
 #  Jobs:
 #    1. lint   - go vet 정적 분석
 #    2. test   - 유닛 테스트 (timeout 300s)
 #    3. build  - 바이너리 빌드 검증
-#    4. docker - Docker 이미지 빌드 (push 시에만)
+#    4. docker - Docker 이미지 빌드 및 레지스트리 푸시
 # =============================================================================
 
 name: CI/CD
@@ -27,8 +28,6 @@ permissions:
 
 env:
   GO_VERSION: "1.25.0"
-  REGISTRY: ghcr.io
-  IMAGE_NAME: ${{ github.repository }}
 
 jobs:
   # ──────────────────────────────────────────────────────────
@@ -45,7 +44,7 @@ jobs:
         uses: actions/setup-go@v5
         with:
           go-version: ${{ env.GO_VERSION }}
-          cache: true                      # Go 모듈 캐시 자동 활용
+          cache: true
 
       - name: Run go vet
         run: go vet ./...
@@ -107,7 +106,11 @@ jobs:
         run: go build ./cmd/muhan-server/
 
   # ──────────────────────────────────────────────────────────
-  # Docker 이미지 빌드 (main push 시에만)
+  # Docker 이미지 빌드 및 레지스트리 푸시 (main push 시에만)
+  #
+  # 두 레지스트리에 동시 푸시:
+  #   1. GHCR (ghcr.io) — GitHub Container Registry
+  #   2. OCI  (a2.oci.0xc0de1ab.dev) — 자체 OCI Registry
   # ──────────────────────────────────────────────────────────
   docker:
     name: Docker Build
@@ -121,22 +124,45 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      - name: Read VERSION
+        id: version
+        run: |
+          VERSION=$(cat VERSION | tr -d '[:space:]')
+          SHORT_SHA=$(echo "${{ github.sha }}" | cut -c1-7)
+          BUILD_DATE=$(date -u '+%Y-%m-%dT%H:%M:%SZ')
+          echo "version=${VERSION}" >> "$GITHUB_OUTPUT"
+          echo "short_sha=${SHORT_SHA}" >> "$GITHUB_OUTPUT"
+          echo "build_date=${BUILD_DATE}" >> "$GITHUB_OUTPUT"
+          echo "Version: ${VERSION}, SHA: ${SHORT_SHA}, Date: ${BUILD_DATE}"
+
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
+      # ─── GHCR 로그인 ───
       - name: Login to GitHub Container Registry
         uses: docker/login-action@v3
         with:
-          registry: ${{ env.REGISTRY }}
+          registry: ghcr.io
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
+
+      # ─── OCI Registry 로그인 ───
+      - name: Login to OCI Registry
+        uses: docker/login-action@v3
+        with:
+          registry: a2.oci.0xc0de1ab.dev
+          username: ${{ secrets.OCI_REGISTRY_USER }}
+          password: ${{ secrets.OCI_REGISTRY_PASSWORD }}
 
       - name: Extract metadata
         id: meta
         uses: docker/metadata-action@v5
         with:
-          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+          images: |
+            ghcr.io/${{ github.repository }}
+            a2.oci.0xc0de1ab.dev/muhan
           tags: |
+            type=raw,value=v${{ steps.version.outputs.version }}
             type=sha,prefix=
             type=raw,value=latest
 
@@ -147,5 +173,9 @@ jobs:
           push: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
+          build-args: |
+            VERSION=${{ steps.version.outputs.version }}
+            COMMIT=${{ steps.version.outputs.short_sha }}
+            BUILD_DATE=${{ steps.version.outputs.build_date }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
