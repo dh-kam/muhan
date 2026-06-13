@@ -129,6 +129,20 @@ func runServer(cfg config, stdout io.Writer, metricsServer *http.Server) error {
 	}
 	defer flushAll("defer shutdown")
 
+	// C-5: Create a cancellable context for graceful shutdown of game loop and connection accept loop
+	serverCtx, cancelServer := context.WithCancel(context.Background())
+	defer cancelServer()
+
+	// Override game/state package level terminations to perform graceful shutdown
+	game.TerminateFunc = func() {
+		slog.Info("[SHUTDOWN] game.TerminateFunc called, cancelling server context")
+		cancelServer()
+	}
+	state.SetExitFunc(func(code int) {
+		slog.Info(fmt.Sprintf("[SHUTDOWN] state.exitFunc called with code %d, cancelling server context", code))
+		cancelServer()
+	})
+
 	// W-21, W-22: Graceful shutdown for metrics and WS servers
 	var wsServer *http.Server
 	shutdownHTTPServers := func() {
@@ -163,7 +177,7 @@ func runServer(cfg config, stdout io.Writer, metricsServer *http.Server) error {
 	} else {
 		fmt.Fprintln(stdout, "login: enabled")
 	}
-	return serve(context.Background(), listener, inputs, cfg.actor, cfg.ansi, stdout, flushAll)
+	return serve(serverCtx, listener, inputs, cfg.actor, cfg.ansi, stdout, flushAll)
 }
 
 func migrateSidecarsForStartup(root string, stdout io.Writer) error {
@@ -465,6 +479,22 @@ func serve(ctx context.Context, listener net.Listener, inputs runtimeInputs, act
 	var ipConnsMu sync.Mutex
 	ipConns := map[string]int{}
 
+	// Unblock listener.Accept() when context is cancelled or game loop exits.
+	// This solves C-4 (Accept loop blocking loopErr reception).
+	go func() {
+		select {
+		case <-ctx.Done():
+			slog.Info("[SHUTDOWN] Context cancelled, unblocking accept loop")
+		case err := <-loopErr:
+			slog.Info("[SHUTDOWN] Game loop exited, unblocking accept loop")
+			select {
+			case loopErr <- err:
+			default:
+			}
+		}
+		_ = listener.Close()
+	}()
+
 	var nextID uint64
 	for {
 		select {
@@ -476,6 +506,15 @@ func serve(ctx context.Context, listener net.Listener, inputs runtimeInputs, act
 
 		conn, err := listener.Accept()
 		if err != nil {
+			select {
+			case lerr := <-loopErr:
+				flushAll("loopErr shutdown")
+				return lerr
+			default:
+			}
+			if ctx.Err() != nil {
+				return ctx.Err()
+			}
 			return err
 		}
 

@@ -7,6 +7,10 @@ import (
 
 var exitFunc = os.Exit
 
+func SetExitFunc(fn func(code int)) {
+	exitFunc = fn
+}
+
 func (w *World) TickWorld(t int64) error {
 	if w == nil {
 		return fmt.Errorf("tick world: world state is nil")

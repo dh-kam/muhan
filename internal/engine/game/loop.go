@@ -584,8 +584,12 @@ func (a *loopShutdownWorld) DisconnectAll() {
 	}
 }
 
-func (a *loopShutdownWorld) Terminate() {
+var TerminateFunc = func() {
 	os.Exit(0)
+}
+
+func (a *loopShutdownWorld) Terminate() {
+	TerminateFunc()
 }
 
 func (l *Loop) SessionLastInputTime(sessionID session.ID) (int64, bool) {
