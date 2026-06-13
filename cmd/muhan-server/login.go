@@ -115,11 +115,21 @@ func firstLoginRemoteHost(values []string) string {
 	return strings.TrimSpace(values[0])
 }
 
+func (m *serverLoginManager) cleanupIPFailuresLocked() {
+	now := time.Now()
+	for ip, rec := range m.ipFailures {
+		if now.Sub(rec.lastFailure) > 10*time.Minute && now.After(rec.blockedUntil) {
+			delete(m.ipFailures, ip)
+		}
+	}
+}
+
 func (m *serverLoginManager) HandleLine(ctx context.Context, id session.ID, line string) (game.UnauthenticatedLineResult, error) {
 	if m == nil {
 		return game.UnauthenticatedLineResult{}, errors.New("login manager is nil")
 	}
 	m.mu.Lock()
+	m.cleanupIPFailuresLocked()
 	login := m.sessions[id]
 
 	// C5: IP 차단 여부 확인 (비밀번호 단계에서만)
