@@ -130,6 +130,7 @@ func runServer(cfg config, stdout io.Writer, metricsServer *http.Server) error {
 	defer flushAll("defer shutdown")
 
 	// W-21, W-22: Graceful shutdown for metrics and WS servers
+	var wsServer *http.Server
 	shutdownHTTPServers := func() {
 		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 		defer cancel()
@@ -151,8 +152,6 @@ func runServer(cfg config, stdout io.Writer, metricsServer *http.Server) error {
 		return fmt.Errorf("listen %q: %w", cfg.listen, err)
 	}
 	defer listener.Close()
-
-	var wsServer *http.Server
 	fmt.Fprintf(stdout, "listening: %s\n", listener.Addr())
 	if cfg.wsListen != "" {
 		tcpPort := listener.Addr().(*net.TCPAddr).Port
@@ -164,7 +163,7 @@ func runServer(cfg config, stdout io.Writer, metricsServer *http.Server) error {
 	} else {
 		fmt.Fprintln(stdout, "login: enabled")
 	}
-	return serve(context.Background(), listener, inputs, cfg.actor, cfg.ansi, stdout)
+	return serve(context.Background(), listener, inputs, cfg.actor, cfg.ansi, stdout, flushAll)
 }
 
 func migrateSidecarsForStartup(root string, stdout io.Writer) error {
@@ -385,7 +384,7 @@ func registryWithRoomExitCommands(registry commandspec.Registry, world *load.Wor
 	return commandspec.NewRegistry(specs)
 }
 
-func serve(ctx context.Context, listener net.Listener, inputs runtimeInputs, actorID string, ansi bool, stdout io.Writer) error {
+func serve(ctx context.Context, listener net.Listener, inputs runtimeInputs, actorID string, ansi bool, stdout io.Writer, flushAll func(string)) error {
 	events := make(chan session.Event, 64)
 	login := newServerLoginManager(inputs.world, inputs.summary.Root)
 	options := []game.Option{
