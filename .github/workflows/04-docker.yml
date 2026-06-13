@@ -81,6 +81,16 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
+      # ─── OCI Registry Host 파싱 ───
+      - name: Parse OCI Registry Host
+        id: oci_host
+        if: inputs.push_oci && env.OCI_REGISTRY != ''
+        run: |
+          # Extract only the domain/host from OCI_REGISTRY (e.g., icn.ocir.io/cnywk2t2q7tb -> icn.ocir.io)
+          HOST=$(echo "${{ secrets.OCI_REGISTRY }}" | cut -d'/' -f1)
+          echo "host=${HOST}" >> "$GITHUB_OUTPUT"
+          echo "Parsed host: ${HOST}"
+
       # ─── OCI Registry 로그인 ───
       - name: Login to OCI Registry
         id: oci_login
@@ -88,7 +98,7 @@ jobs:
         continue-on-error: true
         uses: docker/login-action@v3
         with:
-          registry: ${{ secrets.OCI_REGISTRY }}
+          registry: ${{ steps.oci_host.outputs.host }}
           username: ${{ secrets.OCI_REGISTRY_USER }}
           password: ${{ secrets.OCI_REGISTRY_PASSWORD }}
 
