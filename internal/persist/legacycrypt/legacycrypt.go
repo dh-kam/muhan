@@ -1,6 +1,9 @@
 package legacycrypt
 
-import "strings"
+import (
+	"crypto/subtle"
+	"strings"
+)
 
 func Verify(password, stored string) bool {
 	stored = strings.TrimRight(strings.TrimSpace(stored), "\x00")
@@ -11,5 +14,5 @@ func Verify(password, stored string) bool {
 		return VerifyBcrypt(password, stored)
 	}
 	hash, err := Hash(password)
-	return err == nil && hash == stored
+	return err == nil && subtle.ConstantTimeCompare([]byte(hash), []byte(stored)) == 1
 }
