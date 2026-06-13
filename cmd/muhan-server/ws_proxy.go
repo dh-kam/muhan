@@ -13,7 +13,7 @@ import (
 	"golang.org/x/net/websocket"
 )
 
-func startWebSocketProxy(wsListen string, tcpAddr string, stdout io.Writer) {
+func startWebSocketProxy(wsListen string, tcpAddr string, stdout io.Writer) *http.Server {
 	fmt.Fprintf(stdout, "websocket proxy listening: ws://%s -> tcp://%s\n", wsListen, tcpAddr)
 
 	// C4: 허용된 Origin 목록 구성
@@ -61,6 +61,7 @@ func startWebSocketProxy(wsListen string, tcpAddr string, stdout io.Writer) {
 			log.Printf("WS Proxy HTTP server error: %v", err)
 		}
 	}()
+	return httpServer
 }
 
 func wsAllowedOrigins(wsListen string) map[string]bool {

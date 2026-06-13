@@ -1089,7 +1089,7 @@ func parseMoveObjectWeight(value string) (int, bool) {
 }
 
 func removeID[T comparable](ids []T, id T) []T {
-	kept := ids[:0]
+	kept := make([]T, 0, len(ids))
 	for _, existing := range ids {
 		if existing != id {
 			kept = append(kept, existing)

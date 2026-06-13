@@ -17,6 +17,7 @@ import (
 	"sync"
 	"sync/atomic"
 	"syscall"
+	"time"
 
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 
@@ -60,18 +61,23 @@ func run(args []string, stdout, stderr io.Writer) int {
 	logger := slog.New(slog.NewJSONHandler(stdout, nil))
 	slog.SetDefault(logger)
 
+	var metricsServer *http.Server
 	if cfg.metricsListen != "" {
+		mux := http.NewServeMux()
+		mux.Handle("/metrics", promhttp.Handler())
+		metricsServer = &http.Server{
+			Addr:    cfg.metricsListen,
+			Handler: mux,
+		}
+		slog.Info(fmt.Sprintf("Prometheus metrics listening on %s", cfg.metricsListen))
 		go func() {
-			mux := http.NewServeMux()
-			mux.Handle("/metrics", promhttp.Handler())
-			slog.Info(fmt.Sprintf("Prometheus metrics listening on %s", cfg.metricsListen))
-			if err := http.ListenAndServe(cfg.metricsListen, mux); err != nil {
+			if err := metricsServer.ListenAndServe(); err != nil && err != http.ErrServerClosed {
 				slog.Error(fmt.Sprintf("Prometheus metrics server failed: %v", err))
 			}
 		}()
 	}
 
-	if err := runServer(cfg, stdout); err != nil {
+	if err := runServer(cfg, stdout, metricsServer); err != nil {
 		fmt.Fprintf(stderr, "muhan-server: %v\n", err)
 		var validationErr validationError
 		if errors.As(err, &validationErr) {
@@ -82,7 +88,7 @@ func run(args []string, stdout, stderr io.Writer) int {
 	return 0
 }
 
-func runServer(cfg config, stdout io.Writer) error {
+func runServer(cfg config, stdout io.Writer, metricsServer *http.Server) error {
 	if cfg.migrate {
 		if err := migrateSidecarsForStartup(cfg.root, stdout); err != nil {
 			return err
@@ -108,27 +114,50 @@ func runServer(cfg config, stdout io.Writer) error {
 		return nil
 	}
 
-	// B: Ensure we flush on any exit path after this point (reliable single path)
-	defer func() {
-		if inputs.world != nil {
-			if err := inputs.world.FlushActivePlayersAndBanks(); err != nil {
-				slog.Error(fmt.Sprintf("[PERSIST] ERROR defer shutdown FlushActivePlayersAndBanks: %v", err))
-			} else {
-				slog.Info("[PERSIST] INFO defer shutdown full flush complete (players+banks+rooms)")
+	// C-3: Ensure FlushActivePlayersAndBanks is called exactly once on shutdown
+	var flushOnce sync.Once
+	flushAll := func(tag string) {
+		flushOnce.Do(func() {
+			if inputs.world != nil {
+				if err := inputs.world.FlushActivePlayersAndBanks(); err != nil {
+					slog.Error(fmt.Sprintf("[PERSIST] ERROR %s FlushActivePlayersAndBanks: %v", tag, err))
+				} else {
+					slog.Info(fmt.Sprintf("[PERSIST] INFO %s full flush complete (players+banks+rooms)", tag))
+				}
+			}
+		})
+	}
+	defer flushAll("defer shutdown")
+
+	// W-21, W-22: Graceful shutdown for metrics and WS servers
+	shutdownHTTPServers := func() {
+		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+		defer cancel()
+		if metricsServer != nil {
+			if err := metricsServer.Shutdown(ctx); err != nil {
+				slog.Error(fmt.Sprintf("metrics server shutdown error: %v", err))
 			}
 		}
-	}()
+		if wsServer != nil {
+			if err := wsServer.Shutdown(ctx); err != nil {
+				slog.Error(fmt.Sprintf("ws proxy server shutdown error: %v", err))
+			}
+		}
+	}
+	defer shutdownHTTPServers()
+
 	listener, err := net.Listen("tcp", cfg.listen)
 	if err != nil {
 		return fmt.Errorf("listen %q: %w", cfg.listen, err)
 	}
 	defer listener.Close()
 
+	var wsServer *http.Server
 	fmt.Fprintf(stdout, "listening: %s\n", listener.Addr())
 	if cfg.wsListen != "" {
 		tcpPort := listener.Addr().(*net.TCPAddr).Port
 		tcpAddr := fmt.Sprintf("127.0.0.1:%d", tcpPort)
-		startWebSocketProxy(cfg.wsListen, tcpAddr, stdout)
+		wsServer = startWebSocketProxy(cfg.wsListen, tcpAddr, stdout)
 	}
 	if cfg.actor != "" {
 		fmt.Fprintf(stdout, "temporary actor binding: %s\n", cfg.actor)
@@ -425,13 +454,7 @@ func serve(ctx context.Context, listener net.Listener, inputs runtimeInputs, act
 	go func() {
 		sig := <-sigCh
 		slog.Info(fmt.Sprintf("[PERSIST] INFO received OS signal %v: initiating graceful full flush + shutdown", sig))
-		if inputs.world != nil {
-			if err := inputs.world.FlushActivePlayersAndBanks(); err != nil {
-				slog.Error(fmt.Sprintf("[PERSIST] ERROR signal shutdown FlushActivePlayersAndBanks: %v", err))
-			} else {
-				slog.Info("[PERSIST] INFO signal shutdown full flush complete (players+banks+rooms)")
-			}
-		}
+		flushAll("signal shutdown")
 		// Clean stop: close listener -> Accept errs -> serve returns -> defers run -> clean exit
 		_ = listener.Close()
 	}()
@@ -447,14 +470,7 @@ func serve(ctx context.Context, listener net.Listener, inputs runtimeInputs, act
 	for {
 		select {
 		case err := <-loopErr:
-			// B: Flush persistence on loop exit (crash or shutdown) - single reliable path
-			if inputs.world != nil {
-				if ferr := inputs.world.FlushActivePlayersAndBanks(); ferr != nil {
-					slog.Error(fmt.Sprintf("[PERSIST] ERROR loopErr shutdown FlushActivePlayersAndBanks: %v", ferr))
-				} else {
-					slog.Info("[PERSIST] INFO loopErr shutdown full flush complete (players+banks+rooms)")
-				}
-			}
+			flushAll("loopErr shutdown")
 			return err
 		default:
 		}

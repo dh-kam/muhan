@@ -1008,6 +1008,20 @@ func (w *World) Close() {
 
 // QueueSave enqueues a save request (non-blocking best effort).
 func (w *World) QueueSave(playerID model.PlayerID, bankID model.BankID) {
+	if w.saveQueue == nil {
+		// Channel closed (post-Close): fall back to synchronous save.
+		if !playerID.IsZero() {
+			if err := w.SavePlayer(playerID); err != nil {
+				log.Printf("[PERSIST] ERROR QueueSave after close SavePlayer %s: %v", playerID, err)
+			}
+		}
+		if bankID != "" {
+			if err := w.SaveBank(bankID); err != nil {
+				log.Printf("[PERSIST] ERROR QueueSave after close SaveBank %s: %v", bankID, err)
+			}
+		}
+		return
+	}
 	select {
 	case w.saveQueue <- saveRequest{playerID: playerID, bankID: bankID}:
 	default:

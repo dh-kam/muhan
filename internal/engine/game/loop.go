@@ -251,7 +251,7 @@ func (l *Loop) Run(ctx context.Context, events <-chan session.Event) error {
 				return nil
 			}
 			if err := l.HandleEvent(ctx, event); err != nil {
-				return err
+				log.Printf("[LOOP] ERROR HandleEvent session=%s kind=%s: %v", event.SessionID, event.Kind, err)
 			}
 		}
 	}
@@ -269,7 +269,9 @@ func (l *Loop) TickAt(t int64) {
 	// wimpy checks and similar to run at 1Hz instead of 20s (fidelity bug for
 	// object decay timing, poison/DoT, regen details).
 	if l.world != nil {
-		_ = l.world.TickWorld(t)
+		if err := l.world.TickWorld(t); err != nil {
+			log.Printf("[LOOP] ERROR TickWorld t=%d: %v", t, err)
+		}
 	}
 
 	// B: Smarter periodic persistence (dirty + activity based)

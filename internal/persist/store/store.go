@@ -540,7 +540,7 @@ func appendObjectID(ids []model.ObjectInstanceID, id model.ObjectInstanceID) []m
 }
 
 func removeObjectID(ids []model.ObjectInstanceID, id model.ObjectInstanceID) []model.ObjectInstanceID {
-	filtered := ids[:0]
+	filtered := make([]model.ObjectInstanceID, 0, len(ids))
 	for _, existing := range ids {
 		if existing != id {
 			filtered = append(filtered, existing)
@@ -559,7 +559,7 @@ func appendPlayerID(ids []model.PlayerID, id model.PlayerID) []model.PlayerID {
 }
 
 func removePlayerID(ids []model.PlayerID, id model.PlayerID) []model.PlayerID {
-	filtered := ids[:0]
+	filtered := make([]model.PlayerID, 0, len(ids))
 	for _, existing := range ids {
 		if existing != id {
 			filtered = append(filtered, existing)
@@ -578,7 +578,7 @@ func appendCreatureID(ids []model.CreatureID, id model.CreatureID) []model.Creat
 }
 
 func removeCreatureID(ids []model.CreatureID, id model.CreatureID) []model.CreatureID {
-	filtered := ids[:0]
+	filtered := make([]model.CreatureID, 0, len(ids))
 	for _, existing := range ids {
 		if existing != id {
 			filtered = append(filtered, existing)
