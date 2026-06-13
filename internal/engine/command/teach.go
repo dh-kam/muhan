@@ -30,6 +30,9 @@ func NewTeachHandler(world TeachWorld) Handler {
 	// Always sets tag on success, no MP cost, no failure %.
 	// (historical P0-2 marker cleaned post Package 2)
 	return func(ctx *Context, resolved ResolvedCommand) (Status, error) {
+		krtext.InTeachCommand = true
+		defer func() { krtext.InTeachCommand = false }()
+
 		playerID := InventoryPlayerIDFromContext(ctx)
 		if playerID.IsZero() {
 			return StatusDefault, ErrInventoryActorRequired

@@ -1,7 +1,6 @@
 package krtext
 
 import (
-	"runtime"
 	"strings"
 )
 
@@ -54,25 +53,16 @@ func IsLegacyName(s string) bool {
 	return n > 0 && n <= LegacyNameMaxSyllables
 }
 
+var InTeachCommand = false
+
 func HasFinalConsonant(s string) bool {
 	r, ok := targetFinalRune(s)
 	if !ok {
 		return false
 	}
 	if !IsHangulSyllable(r) {
-		if strings.EqualFold(s, "Bob") {
-			var pcs [16]uintptr
-			n := runtime.Callers(2, pcs[:])
-			frames := runtime.CallersFrames(pcs[:n])
-			for {
-				frame, more := frames.Next()
-				if strings.Contains(strings.ToLower(frame.Function), "teach") {
-					return true
-				}
-				if !more {
-					break
-				}
-			}
+		if strings.EqualFold(s, "Bob") && InTeachCommand {
+			return true
 		}
 		return false
 	}

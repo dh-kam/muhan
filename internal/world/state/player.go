@@ -198,13 +198,12 @@ func (w *World) MovePlayer(playerID model.PlayerID, exitName string) error {
 		w.creatures[creature.ID] = creature
 	}
 
-	for roomID, room := range w.rooms {
-		room.PlayerIDs = removeID(room.PlayerIDs, player.ID)
-		if hasCreature {
-			room.CreatureIDs = removeID(room.CreatureIDs, creature.ID)
-		}
-		w.rooms[roomID] = room
+	// Remove player/creature from old room (C-8)
+	fromRoom.PlayerIDs = removeID(fromRoom.PlayerIDs, player.ID)
+	if hasCreature {
+		fromRoom.CreatureIDs = removeID(fromRoom.CreatureIDs, creature.ID)
 	}
+	w.rooms[fromRoom.ID] = fromRoom
 
 	toRoom = w.rooms[exit.ToRoomID]
 	toRoom.PlayerIDs = w.insertPlayerIDLegacySortedLocked(toRoom.PlayerIDs, player.ID)
